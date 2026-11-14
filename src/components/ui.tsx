@@ -214,15 +214,15 @@ export function Modal({
 
   if (!open || typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 flex overflow-y-auto bg-black/40 p-0 backdrop-blur-[2px] sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy ?? titleId}
         className={cx(
-          "pop-in flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-card text-ink shadow-2xl sm:rounded-3xl",
-          wide ? "sm:max-w-3xl" : "sm:max-w-lg",
+          "modal-panel pop-in mx-auto mt-auto flex w-full flex-col overflow-hidden rounded-t-3xl bg-card text-ink shadow-2xl sm:my-auto sm:rounded-3xl",
+          wide ? "sm:max-w-2xl" : "sm:max-w-lg",
         )}
       >
         <div className="flex items-center gap-2 border-b border-line px-4 py-3">

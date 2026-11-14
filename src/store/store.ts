@@ -16,6 +16,7 @@ import type {
   Workspace,
 } from "@/lib/types";
 import { uid } from "@/lib/ids";
+import { clone } from "@/lib/clone";
 import { validateNames, type ImportResult } from "@/lib/roster";
 import { DEFINITIONS } from "@/widgets/definitions";
 import { createDefaultState, makeInstance } from "./defaults";
@@ -386,7 +387,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
         for (const wid of src.widgetIds) {
           const orig = s.widgets[wid];
           if (!orig) continue;
-          const copy: WidgetInstance = { ...structuredClone(orig), id: uid("w"), workspaceId: id, createdAt: Date.now(), removedAt: null };
+          const copy: WidgetInstance = { ...clone(orig), id: uid("w"), workspaceId: id, createdAt: Date.now(), removedAt: null };
           widgets[copy.id] = copy;
           ws.widgetIds.push(copy.id);
         }
@@ -443,7 +444,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       if (!orig) return null;
       // Copy settings (config, color, size) but NOT the session: the copy starts fresh.
       const copy: WidgetInstance = {
-        ...structuredClone(orig),
+        ...clone(orig),
         id: uid("w"),
         locked: false,
         collapsed: false,
@@ -524,7 +525,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       const s = get();
       const orig = s.widgets[id];
       if (!orig || !s.workspaces.some((w) => w.id === workspaceId)) return null;
-      const copy: WidgetInstance = { ...structuredClone(orig), id: uid("w"), workspaceId, removedAt: null, createdAt: Date.now() };
+      const copy: WidgetInstance = { ...clone(orig), id: uid("w"), workspaceId, removedAt: null, createdAt: Date.now() };
       set({
         widgets: { ...s.widgets, [copy.id]: copy },
         workspaces: s.workspaces.map((w) => (w.id === workspaceId ? { ...w, widgetIds: [...w.widgetIds, copy.id] } : w)),
@@ -537,7 +538,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       const w = get().widgets[widgetId];
       if (!w) return null;
       const def = DEFINITIONS[w.type];
-      const config = structuredClone(def.favoriteConfig ? def.favoriteConfig(w.config) : w.config);
+      const config = clone(def.favoriteConfig ? def.favoriteConfig(w.config) : w.config);
       const fav: Favorite = {
         id: uid("f"),
         name: name.trim() || `${def.name} favorite`,
@@ -555,7 +556,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     addFromFavorite(favoriteId) {
       const fav = get().favorites.find((f) => f.id === favoriteId);
       if (!fav) return null;
-      return get().addWidget(fav.type, { color: fav.color, size: fav.size, w: fav.w ?? null, h: fav.h ?? null, title: fav.name, config: structuredClone(fav.config) });
+      return get().addWidget(fav.type, { color: fav.color, size: fav.size, w: fav.w ?? null, h: fav.h ?? null, title: fav.name, config: clone(fav.config) });
     },
     renameFavorite(id, name) {
       if (!name.trim()) return;

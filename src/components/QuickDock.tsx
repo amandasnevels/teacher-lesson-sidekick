@@ -44,7 +44,7 @@ export function QuickDock() {
                   vertical ? "h-14 w-14 text-[10px]" : "h-[52px] min-w-[56px] max-w-[84px] px-1.5 text-[11px]",
                   c ? "" : "bg-black/5 hover:bg-black/10 dark:bg-white/10",
                 )}
-                style={c ? { background: `color-mix(in srgb, ${c.accent} 18%, var(--card))` } : undefined}
+                style={c ? { background: `${c.accent}2e` } : undefined}
               >
                 <span className="text-xl leading-none" aria-hidden>
                   {info.emoji}

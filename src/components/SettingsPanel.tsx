@@ -18,7 +18,7 @@ export function SettingsPanel() {
   const tab = useSidekick((s) => s.settings.tab);
   const s = useSidekick.getState;
   return (
-    <Modal open={open} onClose={() => s().closeSettings()} title="Settings" wide>
+    <Modal open={open} onClose={() => s().closeSettings()} title="Settings" wide footer={<Button variant="primary" onClick={() => s().closeSettings()}>Close</Button>}>
       <div className="space-y-4">
         <div className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1" role="tablist" aria-label="Settings sections">
           {(

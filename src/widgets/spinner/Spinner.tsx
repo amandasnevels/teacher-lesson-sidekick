@@ -31,7 +31,7 @@ export function Wheel({ options, rotation, spinning, durationMs, onDone, size }:
   const n = options.length;
   const R = 100;
   return (
-    <div className="relative mx-auto" style={{ width: size, maxWidth: "100%" }}>
+    <div className="relative mx-auto w-[230px]" style={{ width: size, maxWidth: "100%" }}>
       {/* Pointer at 12 o'clock */}
       <svg viewBox="0 0 40 36" className="absolute left-1/2 top-0 z-10 w-[12%] -translate-x-1/2 -translate-y-[35%] drop-shadow" aria-hidden>
         <path d="M2 2 L38 2 L20 34 Z" fill="var(--ink)" stroke="var(--card)" strokeWidth="3" strokeLinejoin="round" />

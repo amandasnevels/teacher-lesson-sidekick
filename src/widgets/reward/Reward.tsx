@@ -54,7 +54,7 @@ function Visual({ c, value, big }: { c: RewardConfig; value: number; big: boolea
       return (
         <svg viewBox="0 0 120 140" className={cx("mx-auto", big ? "w-72" : "w-32")} aria-hidden>
           <rect x="30" y="6" width="60" height="12" rx="4" fill="var(--ink-soft)" opacity=".6" />
-          <path d="M28 20 h64 q8 0 8 10 v94 q0 12 -12 12 h-56 q-12 0 -12 -12 v-94 q0 -10 8 -10z" fill="color-mix(in srgb, var(--accent) 10%, transparent)" stroke="var(--ink-soft)" strokeWidth="3" />
+          <path d="M28 20 h64 q8 0 8 10 v94 q0 12 -12 12 h-56 q-12 0 -12 -12 v-94 q0 -10 8 -10z" fill="var(--soft)" stroke="var(--ink-soft)" strokeWidth="3" />
           {Array.from({ length: shown }, (_, i) => {
             const perJar = Math.ceil(goal / cols);
             const r = Math.max(3.5, Math.min(8, 100 / (perJar * 2.1)));

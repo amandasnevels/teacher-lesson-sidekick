@@ -71,7 +71,7 @@ function Body({ id, view }: WidgetProps) {
           Station {session.station + 1} of {stations.length}: {stations[session.station] ?? stations[0]}
         </p>
       )}
-      <div className="relative mx-auto flex items-center justify-center" style={{ width: "100%", maxWidth: big ? 520 : "clamp(220px, 58cqi, 440px)" }}>
+      <div className="relative mx-auto flex max-w-[260px] items-center justify-center" style={{ width: "100%", maxWidth: big ? 520 : "clamp(220px, 58cqi, 440px)" }}>
         {config.visual === "ring" && (
           <svg viewBox="0 0 120 120" className="w-full -rotate-90" aria-hidden>
             <circle cx="60" cy="60" r={R} fill="none" stroke="var(--line)" strokeWidth="9" />
@@ -107,7 +107,7 @@ function Body({ id, view }: WidgetProps) {
           ) : (
             <button
               type="button"
-              className={cx("big-digits rounded-xl px-2 font-black leading-none", done && "animate-pulse text-[#e5484d]")}
+              className={cx("big-digits rounded-xl px-2 text-5xl font-black leading-none", done && "animate-pulse text-[#e5484d]")}
               style={{ fontSize: big ? "min(22vw, 9rem)" : "clamp(2.4rem, 14cqi, 5.5rem)" }}
               onClick={() => {
                 if (session.status === "idle") {

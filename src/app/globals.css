@@ -27,7 +27,7 @@
   --brand-ink: #ffffff;
   --accent: #0c8ce9;
   --on-accent: #ffffff;
-  --soft: color-mix(in srgb, var(--accent) 14%, var(--card));
+  --soft: rgba(91, 91, 214, 0.14);
 }
 
 * { -webkit-tap-highlight-color: transparent; }
@@ -56,7 +56,6 @@ body {
   scroll-behavior: auto !important;
 }
 
-.widget-card { --soft: color-mix(in srgb, var(--accent) 14%, var(--card)); }
 
 /* Widget grid: narrow-first. Preferred size only widens a card when there is room. */
 .widget-board { container-type: inline-size; }
@@ -74,8 +73,8 @@ body {
 
 .flash { animation: flash 1.2s ease-out; }
 @keyframes flash {
-  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); }
-  40% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 35%, transparent); }
+  0% { box-shadow: 0 0 0 0 var(--accent); }
+  40% { box-shadow: 0 0 0 6px var(--accent); }
   100% { box-shadow: 0 0 0 0 transparent; }
 }
 
@@ -101,4 +100,12 @@ body {
   70% { transform: translateY(0); }
   82% { transform: translateY(-6%); }
   100% { transform: translateY(0); }
+}
+
+/* Older Chromebooks (Chrome < 108) don't support dvh: each rule lists a vh fallback first. */
+.h-screen-safe { height: 100vh; }
+.modal-panel { max-height: 85vh; }
+@supports (height: 100dvh) {
+  .h-screen-safe { height: 100dvh; }
+  .modal-panel { max-height: 85dvh; }
 }

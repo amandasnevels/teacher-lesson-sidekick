@@ -51,8 +51,8 @@ function Die({ index, rot, size, color, rolling, durationMs, onDone, value }: { 
             className="absolute inset-0 grid grid-cols-3 grid-rows-3 gap-[6%] rounded-[18%] p-[14%] shadow-inner"
             style={{
               transform: `rotateX(${t.rx}deg) rotateY(${t.ry}deg) translateZ(${half}px)`,
-              background: `linear-gradient(145deg, color-mix(in srgb, ${c.accent} 80%, white), ${c.accent})`,
-              border: `2px solid color-mix(in srgb, ${c.accent} 70%, black)`,
+              background: `linear-gradient(145deg, rgba(255,255,255,.3), rgba(255,255,255,0)), ${c.accent}`,
+              border: "2px solid rgba(0,0,0,.22)",
             }}
           >
             {Array.from({ length: 9 }, (_, i) => (

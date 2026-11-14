@@ -67,7 +67,7 @@ test("removed widgets can be undone and restored", async ({ page }) => {
   await page.getByRole("button", { name: "Add widget" }).click();
   await page.getByRole("radio", { name: /Removed/ }).click();
   await page.getByRole("button", { name: "Restore Sticky Note" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).last().click();
   await expect(widget(page, "notes")).toHaveCount(1);
   await expect(widget(page, "notes").getByRole("textbox")).toHaveValue(/Welcome!/);
 });
@@ -330,3 +330,34 @@ test("side-by-side tip can be dismissed and stays dismissed", async ({ page }) =
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("button", { name: "Open in its own window" })).toBeVisible();
 });
+
+for (const vp of [{ width: 1366, height: 600 }, { width: 1024, height: 500 }, { width: 375, height: 560 }]) {
+  test(`pop-ups fit the screen, scroll, and close at ${vp.width}×${vp.height}`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    await openApp(page);
+    for (const open of ["Add widget", "Settings"]) {
+      await page.getByRole("button", { name: open, exact: true }).click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      const box = (await dialog.boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(0);
+      expect(box.y + box.height).toBeLessThanOrEqual(vp.height + 1);
+      // Both exits are on screen: the ✕ in the title bar and the Close button at the bottom.
+      for (const btn of [dialog.getByRole("button", { name: "Close", exact: true }).first(), dialog.getByRole("button", { name: "Close", exact: true }).last()]) {
+        const b = (await btn.boundingBox())!;
+        expect(b.y).toBeGreaterThanOrEqual(0);
+        expect(b.y + b.height).toBeLessThanOrEqual(vp.height + 1);
+      }
+      // The content area scrolls to its end.
+      const scrolled = await dialog.evaluate((d) => {
+        const area = Array.from(d.querySelectorAll<HTMLElement>("div")).find((el) => getComputedStyle(el).overflowY === "auto")!;
+        area.scrollTop = area.scrollHeight;
+        return { canScroll: area.scrollHeight > area.clientHeight, atEnd: Math.abs(area.scrollTop + area.clientHeight - area.scrollHeight) < 2 };
+      });
+      if (open === "Add widget") expect(scrolled.canScroll).toBe(true);
+      expect(scrolled.atEnd).toBe(true);
+      await dialog.getByRole("button", { name: "Close", exact: true }).last().click();
+      await expect(dialog).toBeHidden();
+    }
+  });
+}

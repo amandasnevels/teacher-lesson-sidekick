@@ -63,6 +63,11 @@
 - ✅ Group/partner maker (save as table groups) · ✅ Turn queue · ✅ Class status (custom) · ✅ Visual cues (editable)
 - ✅ Schedule (current period, countdown, transition reminders) · ✅ Private reminders (once/daily/weekdays, audible/silent, period-linked)
 
+## Browser support
+- Works on older school Chromebooks (Chrome 99+): screen-height, color-tint, widget-size and deep-copy features
+  all have fallbacks for browsers that lack `dvh`, `color-mix()`, container units or `structuredClone`.
+- Pop-ups are capped at 85% of the screen height, scroll inside, and always show ✕ plus a Close button 🧪
+
 ## Known limitations
 - The pop-out window's position and size are a request; some browsers or pop-up blockers ignore or block it
   (the guide then shows the manual steps).

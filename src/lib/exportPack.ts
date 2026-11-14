@@ -5,6 +5,7 @@
 import type { Favorite, PersistedState, QuickRoutine, RoutineAction, WidgetInstance, WidgetSize, WidgetType } from "./types";
 import { ALL_TYPES, DEFINITIONS } from "@/widgets/definitions";
 import { uid } from "./ids";
+import { clone } from "./clone";
 
 export interface PackWidget {
   type: WidgetType;
@@ -37,7 +38,7 @@ function scrub(value: unknown, names: Set<string>): unknown {
 
 export function sanitizeConfig(type: WidgetType, config: Record<string, unknown>, names: Set<string>): Record<string, unknown> {
   const def = DEFINITIONS[type];
-  let c = structuredClone(config);
+  let c = clone(config);
   if (def.favoriteConfig) c = def.favoriteConfig(c); // drops note text, reward images
   return scrub(c, names) as Record<string, unknown>;
 }

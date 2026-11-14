@@ -22,7 +22,7 @@ const LAYOUTS: Record<string, CSSProperties> = {
 export function AppShell() {
   const dock = useSidekick((s) => s.prefs.dockPosition);
   return (
-    <div className="grid h-dvh w-full overflow-clip" style={LAYOUTS[dock] ?? LAYOUTS.bottom} data-dock={dock}>
+    <div className="grid h-screen-safe w-full overflow-clip" style={LAYOUTS[dock] ?? LAYOUTS.bottom} data-dock={dock}>
       <a href="#workspace" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-card focus:p-2">
         Skip to widgets
       </a>

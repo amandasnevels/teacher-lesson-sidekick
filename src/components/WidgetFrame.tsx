@@ -68,7 +68,8 @@ function ResizeGrip({ corner, title, resize }: { corner: "left" | "right"; title
 
 export function accentStyle(color: string): CSSProperties {
   const c = colorOf(color);
-  return { ["--accent" as string]: c.accent, ["--on-accent" as string]: c.ink };
+  // Translucent tint (hex alpha) instead of color-mix(), which older Chromebooks lack.
+  return { ["--accent" as string]: c.accent, ["--on-accent" as string]: c.ink, ["--soft" as string]: `${c.accent}24` };
 }
 
 export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize }: { id: string; handle?: HandleProps; resize?: ResizeProps }) {

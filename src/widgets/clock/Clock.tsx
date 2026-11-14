@@ -26,7 +26,7 @@ function Body({ id, view }: WidgetProps) {
   const compact = c.style === "compact" && view !== "expanded";
   return (
     <div className="text-center" aria-live="off">
-      <p className="big-digits font-black leading-none" style={{ fontSize: view === "expanded" ? "min(18vw, 8rem)" : compact ? "2rem" : "clamp(2.2rem, 16cqi, 3.4rem)" }} data-testid="clock-time">
+      <p className="big-digits text-5xl font-black leading-none" style={{ fontSize: view === "expanded" ? "min(18vw, 8rem)" : compact ? "2rem" : "clamp(2.2rem, 16cqi, 3.4rem)" }} data-testid="clock-time">
         {t.main}
         {t.suffix && <span className="ml-1 align-top text-[.4em] font-bold text-ink-soft">{t.suffix}</span>}
       </p>

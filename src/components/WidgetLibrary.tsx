@@ -39,7 +39,7 @@ export function WidgetLibrary() {
   };
 
   return (
-    <Modal open={open} onClose={close} title="Widget Library" wide>
+    <Modal open={open} onClose={close} title="Widget Library" wide footer={<Button variant="primary" onClick={close}>Close</Button>}>
       {confirmEl}
       <div className="space-y-3">
         <label className="relative block">
@@ -91,7 +91,7 @@ export function WidgetLibrary() {
                       className="flex h-full w-full items-start gap-2 rounded-2xl border-2 border-line p-2.5 text-left transition hover:border-brand"
                       aria-label={`Add new ${d.name}`}
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: `color-mix(in srgb, ${c.accent} 22%, var(--card))` }} aria-hidden>
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: `${c.accent}38` }} aria-hidden>
                         {d.emoji}
                       </span>
                       <span className="min-w-0">
@@ -113,7 +113,7 @@ export function WidgetLibrary() {
             {favorites.length === 0 && <li className="py-4 text-center text-sm text-ink-soft">No favorites yet. Use a widget’s ⋯ menu → Save Favorite.</li>}
             {favorites.filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()) || matches(f.type, q)).map((f) => (
               <li key={f.id} className="flex items-center gap-2 rounded-2xl border-2 border-line p-2">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: `color-mix(in srgb, ${colorOf(f.color).accent} 22%, var(--card))` }} aria-hidden>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={{ background: `${colorOf(f.color).accent}38` }} aria-hidden>
                   {DEFINITIONS[f.type].emoji}
                 </span>
                 <span className="min-w-0 flex-1">

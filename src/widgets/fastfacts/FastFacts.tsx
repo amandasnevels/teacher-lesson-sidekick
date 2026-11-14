@@ -96,7 +96,7 @@ function Body({ id, view }: WidgetProps) {
 
       <div className="flex min-h-32 flex-col items-center justify-center rounded-2xl bg-soft px-3 py-4 text-center" aria-live="polite">
         {s.fact ? (
-          <p className={cx("big-digits font-black leading-none", big ? "text-[min(16vw,8rem)]" : "text-[clamp(2.4rem,15cqi,4.5rem)]")} data-testid="fact-prompt">
+          <p className="big-digits text-5xl font-black leading-none" style={{ fontSize: big ? "min(16vw, 8rem)" : "clamp(2.4rem, 15cqi, 4.5rem)" }} data-testid="fact-prompt">
             {s.fact.prompt.includes("☐") ? s.fact.prompt.replace("☐", s.revealed ? String(s.fact.answer) : "☐") : `${s.fact.prompt} = ${s.revealed ? s.fact.answer : "?"}`}
           </p>
         ) : (

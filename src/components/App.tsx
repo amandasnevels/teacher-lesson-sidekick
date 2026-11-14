@@ -72,7 +72,7 @@ export default function App() {
 
   if (!hydrated) {
     return (
-      <div className="flex h-dvh items-center justify-center" role="status">
+      <div className="flex h-screen-safe items-center justify-center" role="status">
         <p className="animate-pulse text-lg font-bold text-ink-soft">Loading your Sidekick…</p>
       </div>
     );
