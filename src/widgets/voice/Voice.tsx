@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff } from "lucide-react";
+import { Bell, BellOff, Mic, MicOff } from "lucide-react";
+import { useSidekick } from "@/store/store";
 import { useConfig } from "@/store/hooks";
-import type { VoiceLevel } from "@/lib/types";
+import type { SoundId, VoiceLevel } from "@/lib/types";
 import { MicMeter, type MicError, type MicState } from "@/lib/micMeter";
-import { Button, Field, Toggle, cx } from "@/components/ui";
+import { LoudAlarm } from "@/lib/loudAlarm";
+import { SOUNDS, isSoundId, playSound } from "@/lib/audio";
+import { Button, Field, Segmented, Toggle, cx, inputCls } from "@/components/ui";
 import type { WidgetModule, WidgetProps } from "../types";
 
 export const VOICE_LEVELS: Record<VoiceLevel, { label: string; emoji: string; desc: string; yellow: number; red: number; color: string }> = {
@@ -21,6 +24,22 @@ interface VoiceConfig {
   customThresholds: boolean;
   yellow: number;
   red: number;
+  /** Play a sound when the room stays too loud. Off unless the teacher turns it on. */
+  alertOn?: boolean;
+  alertSound?: SoundId;
+  /** Seconds the meter must stay red before the alert plays. */
+  alertDelay?: number;
+  /** Minimum seconds between alerts. */
+  alertCooldown?: number;
+}
+
+export function alertSettings(c: VoiceConfig) {
+  return {
+    on: !!c.alertOn,
+    sound: isSoundId(c.alertSound) ? c.alertSound : ("attention" as SoundId),
+    delay: c.alertDelay ?? 2,
+    cooldown: c.alertCooldown ?? 10,
+  };
 }
 
 export function thresholdsFor(c: VoiceConfig) {
@@ -75,6 +94,17 @@ function Body({ id, view }: WidgetProps) {
   tRef.current = t;
   const lv = VOICE_LEVELS[c.level] ?? VOICE_LEVELS.whisper;
   const big = view === "expanded";
+  const alert = alertSettings(c);
+  const alertRef = useRef(alert);
+  alertRef.current = alert;
+  const alarm = useRef(new LoudAlarm({ delayMs: alert.delay * 1000, cooldownMs: alert.cooldown * 1000 }));
+  alarm.current.opts = { delayMs: alert.delay * 1000, cooldownMs: alert.cooldown * 1000 };
+  const [alerting, setAlerting] = useState(false);
+  const muted = useSidekick((s) => s.prefs.muted);
+
+  useEffect(() => {
+    if (!alert.on) alarm.current.reset();
+  }, [alert.on]);
 
   useEffect(() => {
     const m = acquire(id);
@@ -89,6 +119,11 @@ function Body({ id, view }: WidgetProps) {
       const el = barRef.current;
       if (el) {
         const z = zoneFor(level, tRef.current);
+        if (alertRef.current.on && alarm.current.update(z === "red", Date.now())) {
+          playSound(alertRef.current.sound);
+          setAlerting(true);
+          setTimeout(() => setAlerting(false), 2000);
+        }
         el.style.width = `${level}%`;
         el.style.background = ZONE_COLORS[z];
         el.parentElement?.setAttribute("aria-valuenow", String(Math.round(level)));
@@ -143,18 +178,28 @@ function Body({ id, view }: WidgetProps) {
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {on ? (
-            <Button variant="danger" size="sm" onClick={() => meterRef.current?.stop()}>
+            <Button variant="danger" size="sm" className="whitespace-nowrap" onClick={() => meterRef.current?.stop()}>
               <MicOff size={16} /> Stop microphone
             </Button>
           ) : (
-            <Button variant="accent" size="sm" onClick={() => meterRef.current?.start()} disabled={state === "starting"}>
+            <Button variant="accent" size="sm" className="whitespace-nowrap" onClick={() => meterRef.current?.start()} disabled={state === "starting"}>
               <Mic size={16} /> {state === "starting" ? "Waiting for permission…" : "Enable microphone"}
             </Button>
           )}
+          <button
+            type="button"
+            aria-pressed={alert.on}
+            onClick={() => set({ alertOn: !alert.on })}
+            title={alert.on ? `Plays ${alert.sound} after ${alert.delay}s in the red` : "Play a sound when it stays too loud"}
+            className={cx("inline-flex min-h-9 items-center gap-1 whitespace-nowrap rounded-xl px-2.5 text-xs font-bold transition", alert.on ? "bg-[#e5484d] text-white" : "bg-soft text-ink")}
+            data-testid="loud-alert-toggle"
+          >
+            {alert.on ? <Bell size={14} /> : <BellOff size={14} />} Too-loud sound: {alert.on ? "On" : "Off"}
+          </button>
           {on && (
-            <span className="flex items-center gap-1.5 text-xs font-bold text-[#d93036]" role="status">
+            <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-bold text-[#d93036]" role="status">
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-[#e5484d]" /> Mic on · not recorded
             </span>
           )}
@@ -180,6 +225,14 @@ function Body({ id, view }: WidgetProps) {
           <div className="absolute inset-y-0 w-0.5 bg-ink/50" style={{ left: `${t.yellow}%` }} />
           <div className="absolute inset-y-0 w-0.5 bg-ink/50" style={{ left: `${t.red}%` }} />
         </div>
+        {alert.on && muted && (
+          <p className="text-xs font-semibold text-[#8a1c20]">Sounds are muted, so the too-loud alert won’t play. Unmute in Settings.</p>
+        )}
+        {alerting && (
+          <p className="pop-in rounded-xl bg-[#e5484d] px-3 py-1.5 text-center font-black text-white" role="status" data-testid="loud-alert-flash">
+            🔔 Too loud!
+          </p>
+        )}
         {on && (
           <p className={cx("text-center font-black", big ? "text-4xl" : "text-lg")} style={{ color: ZONE_COLORS[zone] === "#f5b700" ? "#a47800" : ZONE_COLORS[zone] }} aria-live="polite">
             {zone === "green" ? "👍 Just right" : zone === "yellow" ? "⚠️ Getting loud" : "🛑 Too loud"}
@@ -207,9 +260,33 @@ function Mini({ id }: { id: string }) {
 function Settings({ id }: { id: string }) {
   const [c, set] = useConfig<VoiceConfig>(id);
   const t = thresholdsFor(c);
+  const alert = alertSettings(c);
   return (
     <div className="space-y-3">
       <p className="text-sm text-ink-soft">The meter shows relative loudness (not calibrated decibels). Audio is analysed on this device and never recorded or sent anywhere.</p>
+      <div className="space-y-2 rounded-2xl border-2 border-line p-3">
+        <Toggle checked={alert.on} onChange={(alertOn) => set({ alertOn })} label="Too-loud sound alert" description="Plays a sound when the meter stays in the red. Needs the microphone on." />
+        {alert.on && (
+          <>
+            <Field label="Alert sound">
+              <div className="flex gap-2">
+                <select className={inputCls} value={alert.sound} onChange={(e) => set({ alertSound: e.target.value as SoundId })} aria-label="Alert sound">
+                  {SOUNDS.map((x) => (
+                    <option key={x.id} value={x.id}>{x.emoji} {x.name}</option>
+                  ))}
+                </select>
+                <Button variant="outline" onClick={() => playSound(alert.sound)}>Test</Button>
+              </div>
+            </Field>
+            <Field label="Play after it stays loud for">
+              <Segmented label="Alert delay" value={alert.delay} onChange={(alertDelay) => set({ alertDelay })} options={[1, 2, 3, 5].map((n) => ({ value: n, label: `${n} s` }))} />
+            </Field>
+            <Field label="Wait between alerts">
+              <Segmented label="Alert cooldown" value={alert.cooldown} onChange={(alertCooldown) => set({ alertCooldown })} options={[5, 10, 20, 30].map((n) => ({ value: n, label: `${n} s` }))} />
+            </Field>
+          </>
+        )}
+      </div>
       <Toggle checked={c.customThresholds} onChange={(customThresholds) => set({ customThresholds, yellow: t.yellow, red: t.red })} label="Custom thresholds" description="Otherwise thresholds follow the selected voice level." />
       {c.customThresholds && (
         <>

@@ -39,7 +39,9 @@
 - ✅ Coin flip (3D, result = visible side, stats) 🧪
 - ✅ Soundboard (5 original synthesized sounds, stop, volume, mute, favorites)
 - ✅ Voice Level + live noise meter (permission flow, zones, sensitivity, thresholds, active indicator,
-  stop releases tracks, unmount cleanup, error handling) 🧪 (incl. real fake-device browser test)
+  stop releases tracks, unmount cleanup, error handling) 🧪
+  - ✅ Optional too-loud sound alert: on/off right in the widget; choose the sound, how long the room must stay in
+    the red (1–5 s) and the wait between alerts (5–30 s); ignores the mic while its own alert plays; respects mute 🧪 (incl. real fake-device browser test)
 
 ## Workflows
 - ✅ Quick Dock: position top/bottom/left/right, pin actions/routines/favorites/widgets, reorder 🧪

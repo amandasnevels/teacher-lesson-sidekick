@@ -212,7 +212,7 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     defaultColor: "green",
     defaultSize: "M",
     usesRoster: false,
-    defaultConfig: () => ({ level: "whisper", sensitivity: 1.5, customThresholds: false, yellow: 40, red: 70 }),
+    defaultConfig: () => ({ level: "whisper", sensitivity: 1.5, customThresholds: false, yellow: 40, red: 70, alertOn: false, alertSound: "attention", alertDelay: 2, alertCooldown: 10 }),
   },
   tally: {
     type: "tally",
