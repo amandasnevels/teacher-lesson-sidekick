@@ -6,7 +6,7 @@ import type { WidgetSize, WidgetType } from "@/lib/types";
 import type { WidgetColorKey } from "@/lib/colors";
 import { uid } from "@/lib/ids";
 
-export type WidgetCategory = "Essentials" | "Students" | "Randomizers" | "Management" | "Rewards" | "Schedule";
+export type WidgetCategory = "Essentials" | "Students" | "Randomizers" | "Learning" | "Management" | "Rewards" | "Schedule";
 
 export interface WidgetDefinition {
   type: WidgetType;
@@ -332,11 +332,35 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     usesRoster: false,
     defaultConfig: () => ({ items: [] }),
   },
+  quiz: {
+    type: "quiz",
+    name: "Quick Fact Game",
+    emoji: "🧠",
+    description: "Quick questions by grade and subject, with think time and team scores.",
+    category: "Learning",
+    keywords: ["quiz", "trivia", "game", "questions", "review", "science", "social studies", "ela", "math", "grade"],
+    defaultColor: "indigo",
+    defaultSize: "M",
+    usesRoster: false,
+    defaultConfig: () => ({ grade: "3-5", subject: "science", thinkSeconds: 10, teams: false, teamNames: ["Team 1", "Team 2"], custom: [] }),
+  },
+  fastfacts: {
+    type: "fastfacts",
+    name: "Fast Facts",
+    emoji: "⚡",
+    description: "Math fact flash cards: pick the operation and level.",
+    category: "Learning",
+    keywords: ["math facts", "flash cards", "fluency", "addition", "subtraction", "multiplication", "division", "times tables"],
+    defaultColor: "orange",
+    defaultSize: "M",
+    usesRoster: false,
+    defaultConfig: () => ({ op: "mul", level: "to10", focus: 7, pace: 5, setSize: 20 }),
+  },
 };
 
 export const ALL_TYPES = Object.keys(DEFINITIONS) as WidgetType[];
 
-export const CATEGORIES: WidgetCategory[] = ["Essentials", "Students", "Randomizers", "Management", "Rewards", "Schedule"];
+export const CATEGORIES: WidgetCategory[] = ["Essentials", "Students", "Randomizers", "Learning", "Management", "Rewards", "Schedule"];
 
 export interface WidgetPack {
   id: string;
@@ -349,6 +373,7 @@ export interface WidgetPack {
 export const PACKS: WidgetPack[] = [
   { id: "management", name: "Classroom Management", emoji: "🧭", description: "Voice levels, sounds, status and visual cues.", types: ["voice", "soundboard", "status", "cues"] },
   { id: "activities", name: "Interactive Activities", emoji: "🎲", description: "Dice, spinner, choices, coin, groups and a turn queue.", types: ["dice", "spinner", "choice", "coin", "groups", "queue"] },
+  { id: "learning", name: "Learning Games", emoji: "🧠", description: "Quick Fact Game and Fast Facts math flash cards.", types: ["quiz", "fastfacts"] },
   { id: "rewards", name: "Rewards", emoji: "🏆", description: "Reward tracker and tally counter.", types: ["reward", "tally"] },
   { id: "schedule", name: "Schedule & Routines", emoji: "🗓️", description: "Schedule awareness and private reminders.", types: ["schedule", "reminders"] },
 ];

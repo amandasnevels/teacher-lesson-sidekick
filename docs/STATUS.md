@@ -43,6 +43,13 @@
   - ✅ Optional too-loud sound alert: on/off right in the widget; choose the sound, how long the room must stay in
     the red (1–5 s) and the wait between alerts (5–30 s); ignores the mic while its own alert plays; respects mute 🧪 (incl. real fake-device browser test)
 
+## Learning widgets
+- ✅ Quick Fact Game: grade band (K–2, 3–5, 6–8, 9–12) × subject (Math, Science, Social Studies, ELA, Mixed,
+  My questions). 144 original built-in questions + generated grade-level math; no repeats within a round; optional
+  think-time countdown with auto-reveal; two-team scoring; teacher-written question sets 🧪
+- ✅ Fast Facts: + − × ÷ or mixed; levels (within 5/10/20, doubles, make 10, tables to 5/10/12, focus number);
+  manual or auto-play pacing; sets of 10/20/unlimited; every fact verified correct by tests 🧪
+
 ## Workflows
 - ✅ Quick Dock: position top/bottom/left/right, pin actions/routines/favorites/widgets, reorder 🧪
 - ✅ Quick Find with deterministic commands 🧪

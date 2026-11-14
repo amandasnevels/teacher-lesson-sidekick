@@ -36,7 +36,9 @@ export type WidgetType =
   | "status"
   | "cues"
   | "schedule"
-  | "reminders";
+  | "reminders"
+  | "quiz"
+  | "fastfacts";
 
 export type WidgetSize = "S" | "M" | "L";
 
