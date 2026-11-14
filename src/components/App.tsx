@@ -12,6 +12,7 @@ import { AppShell } from "./AppShell";
 import { TimerEngine } from "./engines/TimerEngine";
 import { ReminderEngine } from "./engines/ReminderEngine";
 import { Shortcuts } from "./engines/Shortcuts";
+import { HallPassEngine } from "./engines/HallPassEngine";
 
 export default function App() {
   const hydrated = useSidekick((s) => s.hydrated);
@@ -84,6 +85,7 @@ export default function App() {
       <TimerEngine />
       <ReminderEngine />
       <Shortcuts />
+      <HallPassEngine />
     </>
   );
 }

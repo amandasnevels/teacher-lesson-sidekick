@@ -11,6 +11,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from "react";
@@ -154,6 +155,24 @@ export const inputCls =
 
 /* ------------------------------------------------------------------ Modal */
 
+let openModals = 0;
+const modalListeners = new Set<() => void>();
+function setOpenModals(delta: number) {
+  openModals += delta;
+  modalListeners.forEach((l) => l());
+}
+/** Number of pop-ups currently open (toasts move to the top so they never cover one). */
+export function useOpenModalCount() {
+  return useSyncExternalStore(
+    (cb) => {
+      modalListeners.add(cb);
+      return () => modalListeners.delete(cb);
+    },
+    () => openModals,
+    () => 0,
+  );
+}
+
 export function Modal({
   open,
   onClose,
@@ -162,6 +181,7 @@ export function Modal({
   footer,
   wide,
   labelledBy,
+  panelStyle,
 }: {
   open: boolean;
   onClose: () => void;
@@ -170,6 +190,8 @@ export function Modal({
   footer?: ReactNode;
   wide?: boolean;
   labelledBy?: string;
+  /** e.g. a widget's accent colors, since pop-ups render outside the widget. */
+  panelStyle?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -178,6 +200,7 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
+    setOpenModals(1);
     const prev = document.activeElement as HTMLElement | null;
     const t = setTimeout(() => {
       const el = ref.current?.querySelector<HTMLElement>("[data-autofocus]") ?? ref.current?.querySelector<HTMLElement>("input,textarea,select,button");
@@ -207,6 +230,7 @@ export function Modal({
     document.addEventListener("keydown", onKey, true);
     return () => {
       clearTimeout(t);
+      setOpenModals(-1);
       document.removeEventListener("keydown", onKey, true);
       prev?.focus?.();
     };
@@ -220,6 +244,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy ?? titleId}
+        style={panelStyle}
         className={cx(
           "modal-panel pop-in mx-auto mt-auto flex w-full flex-col overflow-hidden rounded-t-3xl bg-card text-ink shadow-2xl sm:my-auto sm:rounded-3xl",
           wide ? "sm:max-w-2xl" : "sm:max-w-lg",

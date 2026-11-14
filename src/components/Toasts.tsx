@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { useSidekick, type Toast } from "@/store/store";
-import { cx } from "./ui";
+import { cx, useOpenModalCount } from "./ui";
 
 function ToastItem({ t }: { t: Toast }) {
   const dismiss = useSidekick((s) => s.dismissToast);
@@ -40,11 +40,12 @@ function ToastItem({ t }: { t: Toast }) {
 export function Toasts() {
   const toasts = useSidekick((s) => s.toasts);
   const dock = useSidekick((s) => s.prefs.dockPosition);
+  const modalOpen = useOpenModalCount() > 0;
   return (
     <ol
       aria-live="polite"
       className="pointer-events-none fixed inset-x-2 z-[70] mx-auto flex max-w-md flex-col gap-2"
-      style={{ bottom: dock === "bottom" ? "calc(76px + env(safe-area-inset-bottom))" : "16px" }}
+      style={modalOpen ? { top: "12px" } : { bottom: dock === "bottom" ? "calc(76px + env(safe-area-inset-bottom))" : "16px" }}
     >
       {toasts.map((t) => (
         <ToastItem key={t.id} t={t} />

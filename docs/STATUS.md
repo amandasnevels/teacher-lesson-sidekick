@@ -19,6 +19,16 @@
   hidden in the pop-out and in already-narrow windows) and always available in Settings → General 🧪
 - ✅ Single active window: if Sidekick is opened twice, the older window pauses saving so nothing is overwritten 🧪
 
+## Hall Pass
+- ✅ Widget face: count of students out (optionally names, places and time out; overdue turns red); Check out /
+  Check in buttons; collapsed view shows “N out” 🧪
+- ✅ Check out: names on one side, places on the other (Restroom, Nurse, Water, Office + Add place); two taps 🧪
+- ✅ Check in: one tap per student, or Check in all; Undo 🧪
+- ✅ Optional reminder after 3–15 min (once per trip, optional sound, works while collapsed) 🧪
+- ✅ Out-of-room log per class: date, name, place, time out/in, minutes; filter by today/week/all and student;
+  CSV export; clear (confirmed, undoable). Stored with class records (follows the retention setting) 🧪
+- 🔜 Student self check-out/in from the future student dashboard (entries already record `source`)
+
 ## Day-one widgets
 - ✅ Timer: start/pause/resume/reset, 1/3/5/10/15 + custom, +1 min, ring/bar/digits, color progress, end sounds,
   repeat, station rotation, mini view while collapsed, timestamp-accurate, refresh-safe 🧪

@@ -36,7 +36,7 @@ export function applyRetention(s: PersistedState): PersistedState {
   return {
     ...s,
     classes: s.classes.map((c) => ({ ...c, students: [], groups: [] })),
-    records: { points: {}, participation: {}, picker: {}, rewards: {} },
+    records: { points: {}, participation: {}, picker: {}, rewards: {}, hallpass: {} },
   };
 }
 

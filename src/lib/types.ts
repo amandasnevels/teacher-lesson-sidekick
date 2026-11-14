@@ -38,7 +38,8 @@ export type WidgetType =
   | "schedule"
   | "reminders"
   | "quiz"
-  | "fastfacts";
+  | "fastfacts"
+  | "hallpass";
 
 export type WidgetSize = "S" | "M" | "L";
 
@@ -206,6 +207,25 @@ export interface ClassRecords {
   participation: Record<string, ParticipationData>; // by classId
   picker: Record<string, string[]>; // `${classId}:${instanceId}` → drawn student ids
   rewards: Record<string, number>; // `${classId}:${instanceId}` → progress count
+  hallpass: Record<string, HallPassData>; // by classId
+}
+
+/** One trip out of the room. Names are copied so the log stays readable if the roster changes. */
+export interface HallPassEntry {
+  id: string;
+  studentId: string;
+  name: string;
+  destination: string;
+  outAt: number;
+  inAt?: number | null;
+  /** Who checked the student out. "student" is reserved for the future student dashboard. */
+  source: "teacher" | "student";
+  remindedAt?: number | null;
+}
+
+export interface HallPassData {
+  out: HallPassEntry[];
+  log: HallPassEntry[]; // completed trips, newest last
 }
 
 export interface SyncPreferences {

@@ -3,6 +3,8 @@ import type {
   ClassRoom,
   DockItem,
   DockItemInput,
+  HallPassData,
+  HallPassEntry,
   Favorite,
   ParticipationData,
   PersistedState,
@@ -160,6 +162,11 @@ interface Actions {
   resetParticipation(classId: string): void;
   setPickerDrawn(key: string, drawn: string[]): void;
   setReward(key: string, value: number): void;
+  hallCheckOut(classId: string, studentId: string, destination: string, source?: "teacher" | "student"): boolean;
+  hallCheckIn(classId: string, entryId: string): void;
+  hallCheckInAll(classId: string): void;
+  hallMarkReminded(classId: string, entryId: string): void;
+  hallClearLog(classId: string): void;
 }
 
 export type SidekickState = PersistedState & UIState & Actions;
@@ -180,6 +187,8 @@ const initialUI: UIState = {
 };
 
 const UNDO_LIMIT = 30;
+/** Completed trips kept per class (oldest are dropped first). */
+export const HALL_LOG_LIMIT = 2000;
 
 export const useSidekick = create<SidekickState>()((set, get) => {
   const mutateClass = (classId: string, fn: (c: ClassRoom) => ClassRoom) =>
@@ -188,6 +197,9 @@ export const useSidekick = create<SidekickState>()((set, get) => {
   const pointsOf = (classId: string) => get().records.points[classId] ?? emptyPoints();
   const setPointsData = (classId: string, data: PointsData) =>
     set((s) => ({ records: { ...s.records, points: { ...s.records.points, [classId]: data } } }));
+  const hallOf = (classId: string): HallPassData => get().records.hallpass?.[classId] ?? { out: [], log: [] };
+  const setHall = (classId: string, data: HallPassData) =>
+    set((s) => ({ records: { ...s.records, hallpass: { ...(s.records.hallpass ?? {}), [classId]: data } } }));
   const partOf = (classId: string) => get().records.participation[classId] ?? emptyParticipation();
   const setPart = (classId: string, data: ParticipationData) =>
     set((s) => ({ records: { ...s.records, participation: { ...s.records.participation, [classId]: data } } }));
@@ -291,6 +303,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
         const classes = s.classes.filter((c) => c.id !== id);
         const { [id]: _p, ...points } = s.records.points;
         const { [id]: _q, ...participation } = s.records.participation;
+        const { [id]: _h, ...hallpass } = s.records.hallpass ?? {};
         const strip = (rec: Record<string, unknown>) =>
           Object.fromEntries(Object.entries(rec).filter(([k]) => !k.startsWith(`${id}:`)));
         return {
@@ -301,6 +314,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
             participation,
             picker: strip(s.records.picker) as Record<string, string[]>,
             rewards: strip(s.records.rewards) as Record<string, number>,
+            hallpass,
           },
         };
       });
@@ -371,7 +385,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     clearAllStudentData() {
       set((s) => ({
         classes: s.classes.map((c) => ({ ...c, students: [], groups: [] })),
-        records: { points: {}, participation: {}, picker: {}, rewards: {} },
+        records: { points: {}, participation: {}, picker: {}, rewards: {}, hallpass: {} },
         undoStack: [],
       }));
     },
@@ -632,6 +646,39 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     },
     setPickerDrawn(key, drawn) {
       set((s) => ({ records: { ...s.records, picker: { ...s.records.picker, [key]: drawn } } }));
+    },
+    hallCheckOut(classId, studentId, destination, source = "teacher") {
+      const s = get();
+      const cls = s.classes.find((c) => c.id === classId);
+      const st = cls?.students.find((x) => x.id === studentId);
+      const hp = hallOf(classId);
+      if (!st || hp.out.some((e) => e.studentId === studentId)) return false; // already out
+      s.pushUndo(`Check out ${st.name}`, ["records"]);
+      const entry: HallPassEntry = { id: uid("hp"), studentId, name: st.name, destination: destination.trim() || "Out", outAt: Date.now(), inAt: null, source, remindedAt: null };
+      setHall(classId, { ...hp, out: [...hp.out, entry] });
+      return true;
+    },
+    hallCheckIn(classId, entryId) {
+      const hp = hallOf(classId);
+      const e = hp.out.find((x) => x.id === entryId);
+      if (!e) return;
+      get().pushUndo(`Check in ${e.name}`, ["records"]);
+      setHall(classId, { out: hp.out.filter((x) => x.id !== entryId), log: [...hp.log, { ...e, inAt: Date.now() }].slice(-HALL_LOG_LIMIT) });
+    },
+    hallCheckInAll(classId) {
+      const hp = hallOf(classId);
+      if (!hp.out.length) return;
+      get().pushUndo("Check everyone in", ["records"]);
+      const now = Date.now();
+      setHall(classId, { out: [], log: [...hp.log, ...hp.out.map((e) => ({ ...e, inAt: now }))].slice(-HALL_LOG_LIMIT) });
+    },
+    hallMarkReminded(classId, entryId) {
+      const hp = hallOf(classId);
+      setHall(classId, { ...hp, out: hp.out.map((e) => (e.id === entryId ? { ...e, remindedAt: Date.now() } : e)) });
+    },
+    hallClearLog(classId) {
+      get().pushUndo("Clear hall pass log", ["records"]);
+      setHall(classId, { ...hallOf(classId), log: [] });
     },
     setReward(key, value) {
       set((s) => ({ records: { ...s.records, rewards: { ...s.records.rewards, [key]: Math.max(0, value) } } }));

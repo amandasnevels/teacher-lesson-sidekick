@@ -24,6 +24,7 @@ import Schedule from "./schedule/Schedule";
 import Reminders from "./reminders/Reminders";
 import Quiz from "./quiz/Quiz";
 import FastFacts from "./fastfacts/FastFacts";
+import HallPass from "./hallpass/HallPass";
 
 export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
   timer: Timer,
@@ -50,4 +51,5 @@ export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
   reminders: Reminders,
   quiz: Quiz,
   fastfacts: FastFacts,
+  hallpass: HallPass,
 };

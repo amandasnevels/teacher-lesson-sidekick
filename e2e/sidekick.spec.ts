@@ -361,3 +361,34 @@ for (const vp of [{ width: 1366, height: 600 }, { width: 1024, height: 500 }, { 
     }
   });
 }
+
+test("hall pass: quick check-out and check-in, logged with times", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await openApp(page);
+  await widget(page, "picker").getByRole("button", { name: "Try demo class" }).click();
+  await page.getByRole("button", { name: "Add widget", exact: true }).click();
+  await page.getByRole("button", { name: "Add new Hall Pass", exact: true }).click();
+  const w = widget(page, "hallpass");
+  await w.scrollIntoViewIfNeeded();
+  await w.getByRole("button", { name: /Check out/ }).click();
+  const out = page.getByRole("dialog", { name: "Check out" });
+  const box = (await out.boundingBox())!;
+  expect(box.x).toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width).toBeLessThanOrEqual(375);
+  await out.getByRole("option", { name: "Cam Delgado" }).click();
+  await out.getByRole("button", { name: /Restroom/ }).click();
+  await expect(w.getByTestId("hall-count")).toHaveText("1");
+  await expect(w.getByTestId("hall-names")).toContainText("Cam Delgado");
+  await w.getByRole("button", { name: /^Check in$/ }).click();
+  await page.getByRole("button", { name: "Check in Cam Delgado" }).click();
+  await expect(w.getByTestId("hall-count")).toHaveText("0");
+  await w.getByRole("button", { name: /Out-of-room log/ }).click();
+  await expect(page.getByTestId("hall-log")).toContainText("Cam Delgado");
+  await expect(page.getByTestId("hall-log")).toContainText("Restroom");
+  // Survives a refresh.
+  await page.keyboard.press("Escape");
+  await waitForSave(page);
+  await page.reload();
+  await widget(page, "hallpass").getByRole("button", { name: /Out-of-room log/ }).click();
+  await expect(page.getByTestId("hall-log")).toContainText("Cam Delgado");
+});

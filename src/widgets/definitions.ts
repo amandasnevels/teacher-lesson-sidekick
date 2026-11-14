@@ -332,6 +332,18 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     usesRoster: false,
     defaultConfig: () => ({ items: [] }),
   },
+  hallpass: {
+    type: "hallpass",
+    name: "Hall Pass",
+    emoji: "🚪",
+    description: "Check students out and in, see who's out, and keep an out-of-room log.",
+    category: "Students",
+    keywords: ["hall pass", "bathroom", "restroom", "nurse", "water", "office", "out of room", "sign out", "log"],
+    defaultColor: "teal",
+    defaultSize: "M",
+    usesRoster: true,
+    defaultConfig: () => ({ destinations: ["Restroom", "Nurse", "Water", "Office"], display: "names", reminderOn: true, reminderMinutes: 5, reminderSound: true }),
+  },
   quiz: {
     type: "quiz",
     name: "Quick Fact Game",
