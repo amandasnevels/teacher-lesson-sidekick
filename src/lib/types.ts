@@ -71,6 +71,8 @@ export interface Preferences {
   followClassDefaultWorkspace: boolean;
   /** Routine triggered by the "run selected routine" shortcut. */
   shortcutRoutineId: string | null;
+  /** The “keep Sidekick beside your lesson” guide was dismissed. */
+  sideBySideTipDismissed: boolean;
 }
 
 export interface Student {

@@ -36,6 +36,8 @@ If Playwright's browser isn't installed on your machine, run `npx playwright ins
 
 ## Using it
 
+- **Keep it beside your lesson:** the first-run card (also in Settings → General) has **Open in its own window**,
+  which opens Sidekick as a narrow window on the right edge of the screen, plus step-by-step snapping tips.
 - **＋ Add** opens the Widget Library (search, categories, Favorites, Removed Widgets, Packs).
 - Move widgets by their **⠿ handle** (mouse, touch, or keyboard: focus handle → Space → arrows → Space).
 - Resize widgets by dragging either **bottom corner**. Width snaps to grid columns; double-click a corner to fit

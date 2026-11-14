@@ -15,6 +15,7 @@ export const DEFAULT_PREFS: Preferences = {
   studentDataRetention: "keep",
   followClassDefaultWorkspace: true,
   shortcutRoutineId: null,
+  sideBySideTipDismissed: false,
 };
 
 export function makeInstance(

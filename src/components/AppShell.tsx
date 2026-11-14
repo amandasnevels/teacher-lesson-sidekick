@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { useSidekick } from "@/store/store";
 import { Header } from "./Header";
 import { WorkspaceBoard } from "./WorkspaceBoard";
+import { SideBySideBanner } from "./SideBySide";
 import { QuickDock } from "./QuickDock";
 import { WidgetLibrary } from "./WidgetLibrary";
 import { QuickFind } from "./QuickFind";
@@ -29,6 +30,7 @@ export function AppShell() {
         <Header />
       </div>
       <main id="workspace" style={{ gridArea: "main" }} className="widget-board min-h-0 overflow-y-auto overflow-x-hidden px-2.5 pb-6 pt-2.5 sm:px-4" tabIndex={-1}>
+        <SideBySideBanner />
         <WorkspaceBoard />
       </main>
       <div style={{ gridArea: "dock" }} className="min-h-0 min-w-0">

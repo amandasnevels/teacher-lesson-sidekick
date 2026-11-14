@@ -1,7 +1,9 @@
 "use client";
 import { useEffect } from "react";
 import { useSidekick, persistedSnapshot } from "@/store/store";
-import { loadState, saveState } from "@/store/persist";
+import { loadState } from "@/store/persist";
+import { flush, markDirty, pauseSaving } from "@/store/autosave";
+import { useSingleWindow } from "./engines/SingleWindow";
 import { applyTheme } from "@/lib/themes";
 import { setAudioSettings } from "@/lib/audio";
 import { useReducedMotion } from "@/store/hooks";
@@ -11,25 +13,13 @@ import { TimerEngine } from "./engines/TimerEngine";
 import { ReminderEngine } from "./engines/ReminderEngine";
 import { Shortcuts } from "./engines/Shortcuts";
 
-let saveTimer: ReturnType<typeof setTimeout> | null = null;
-let dirty = false;
-
-async function flush() {
-  if (!dirty) return;
-  dirty = false;
-  try {
-    await saveState(persistedSnapshot());
-  } catch (e) {
-    useSidekick.getState().toast({ message: `Couldn't save changes: ${(e as Error).message}`, tone: "warn" });
-  }
-}
-
 export default function App() {
   const hydrated = useSidekick((s) => s.hydrated);
   const themeId = useSidekick((s) => s.prefs.themeId);
   const volume = useSidekick((s) => s.prefs.volume);
   const muted = useSidekick((s) => s.prefs.muted);
   const reduced = useReducedMotion();
+  const otherWindow = useSingleWindow(hydrated, pauseSaving);
 
   // Load saved data once.
   useEffect(() => {
@@ -60,9 +50,7 @@ export default function App() {
         s.routines !== prev.routines || s.dock !== prev.dock || s.records !== prev.records || s.recentWidgetTypes !== prev.recentWidgetTypes || s.sync !== prev.sync;
       if (!changed) return;
       prev = persistedSnapshot();
-      dirty = true;
-      if (saveTimer) clearTimeout(saveTimer);
-      saveTimer = setTimeout(() => void flush(), 300);
+      markDirty();
     });
     const onHide = () => {
       if (document.visibilityState === "hidden") void flush();
@@ -91,10 +79,27 @@ export default function App() {
   }
   return (
     <>
+      {otherWindow && <PausedOverlay />}
       <AppShell />
       <TimerEngine />
       <ReminderEngine />
       <Shortcuts />
     </>
+  );
+}
+
+/** Shown when Sidekick was opened in another window; this one stops saving until reclaimed. */
+function PausedOverlay() {
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-bg/95 p-4 backdrop-blur" role="alertdialog" aria-modal="true" aria-labelledby="paused-title">
+      <div className="max-w-sm space-y-3 rounded-3xl border border-line bg-card p-5 text-center shadow-2xl">
+        <p className="text-4xl" aria-hidden>🪟</p>
+        <h2 id="paused-title" className="text-lg font-black">Sidekick is open in another window</h2>
+        <p className="text-sm text-ink-soft">To keep your changes from mixing up, this window is paused. You can close it, or switch back to using Sidekick here.</p>
+        <button type="button" onClick={() => window.location.reload()} className="min-h-11 rounded-xl bg-brand px-4 font-bold text-brand-ink">
+          Use Sidekick here instead
+        </button>
+      </div>
+    </div>
   );
 }

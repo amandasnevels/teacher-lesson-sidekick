@@ -14,6 +14,11 @@
 - ✅ 8 themes (Rainbow, Bright & Bold, Pastel, Sunshine, Autumn, Winter, Spring, Dark); reduced-motion setting
 - ✅ IndexedDB autosave + restore, versioned with backup on corruption 🧪
 
+- ✅ "Keep Sidekick beside your lesson" guide: one-click **Open in its own window** (narrow, full height, right
+  edge), drag-the-tab-out steps, Windows/Mac/Chromebook snapping, presenting tips; first-run card (dismissible,
+  hidden in the pop-out and in already-narrow windows) and always available in Settings → General 🧪
+- ✅ Single active window: if Sidekick is opened twice, the older window pauses saving so nothing is overwritten 🧪
+
 ## Day-one widgets
 - ✅ Timer: start/pause/resume/reset, 1/3/5/10/15 + custom, +1 min, ring/bar/digits, color progress, end sounds,
   repeat, station rotation, mini view while collapsed, timestamp-accurate, refresh-safe 🧪
@@ -50,6 +55,8 @@
 - ✅ Schedule (current period, countdown, transition reminders) · ✅ Private reminders (once/daily/weekdays, audible/silent, period-linked)
 
 ## Known limitations
+- The pop-out window's position and size are a request; some browsers or pop-up blockers ignore or block it
+  (the guide then shows the manual steps).
 - Data lives in one browser on one device; clearing site data deletes it. Use settings packs to back up
   layouts (student data intentionally isn't exportable yet).
 - Cross-device sync, accounts and cloud storage are **not implemented** (choices are recorded only).

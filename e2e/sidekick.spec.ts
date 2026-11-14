@@ -234,11 +234,13 @@ test.describe("microphone", () => {
 test("widgets resize by dragging a corner; size persists and narrow windows don't overwrite it", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await openApp(page);
+  await page.getByRole("button", { name: "Dismiss tip" }).click();
   const card = page.locator("[data-widget-id]").first();
   const before = (await card.boundingBox())!;
   expect(await card.getAttribute("data-span")).toBe("2");
 
   const grip = card.getByTestId("resize-right");
+  await grip.scrollIntoViewIfNeeded();
   const g = (await grip.boundingBox())!;
   await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
   await page.mouse.down();
@@ -251,6 +253,7 @@ test("widgets resize by dragging a corner; size persists and narrow windows don'
   expect(after.height).toBeGreaterThan(before.height + 80);
 
   // Bottom-left corner shrinks the width again.
+  await card.getByTestId("resize-left").scrollIntoViewIfNeeded();
   const gl = (await card.getByTestId("resize-left").boundingBox())!;
   await page.mouse.move(gl.x + gl.width / 2, gl.y + gl.height / 2);
   await page.mouse.down();
@@ -286,4 +289,44 @@ test("resize grips work from the keyboard and are hidden on locked widgets", asy
   await page.getByRole("button", { name: "More options for Timer" }).click();
   await page.getByRole("menuitem", { name: "Lock" }).click();
   await expect(card.getByTestId("resize-right")).toHaveCount(0);
+});
+
+test("side-by-side guide opens Sidekick in its own narrow window and pauses the old one", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  const tip = page.getByTestId("side-by-side-tip");
+  await expect(tip).toBeVisible();
+  await tip.getByRole("button", { name: "Show me how" }).click();
+  await expect(tip).toContainText("Drag this browser tab out");
+
+  const [popup] = await Promise.all([page.waitForEvent("popup"), tip.getByRole("button", { name: "Open in its own window" }).click()]);
+  await expect(popup.getByTestId("widget-grid")).toBeVisible();
+  expect(await popup.evaluate(() => window.name)).toBe("sidekick-popout");
+  await expect(popup.getByTestId("side-by-side-tip")).toHaveCount(0); // no tip inside the pop-out
+
+  // The original window pauses so the two can't overwrite each other.
+  await expect(page.getByRole("alertdialog")).toContainText("open in another window");
+
+  // Changes made in the pop-out are saved.
+  await popup.getByRole("button", { name: "More options for Sticky Note" }).click();
+  await popup.getByRole("menuitem", { name: "Remove" }).click();
+  await popup.waitForTimeout(700);
+  await popup.close();
+  await page.getByRole("button", { name: "Use Sidekick here instead" }).click();
+  await expect(page.getByTestId("widget-grid")).toBeVisible();
+  await expect(page.locator('[data-testid="widget-notes"]')).toHaveCount(0);
+});
+
+test("side-by-side tip can be dismissed and stays dismissed", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  await page.getByRole("button", { name: "Dismiss tip" }).click();
+  await expect(page.getByTestId("side-by-side-tip")).toHaveCount(0);
+  await waitForSave(page);
+  await page.reload();
+  await expect(page.getByTestId("widget-grid")).toBeVisible();
+  await expect(page.getByTestId("side-by-side-tip")).toHaveCount(0);
+  // Still available in Settings.
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Open in its own window" })).toBeVisible();
 });

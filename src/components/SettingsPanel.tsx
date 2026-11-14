@@ -10,6 +10,7 @@ import type { DockActionId, DockPosition } from "@/lib/types";
 import { DEFINITIONS } from "@/widgets/definitions";
 import { SHORTCUTS } from "./engines/Shortcuts";
 import { RosterManager } from "./RosterManager";
+import { SideBySideGuide } from "./SideBySide";
 import { Button, Field, IconButton, Modal, Segmented, Toggle, cx, inputCls, useConfirm, usePrompt } from "./ui";
 
 export function SettingsPanel() {
@@ -52,6 +53,10 @@ function GeneralTab() {
   const [more, setMore] = useState(false);
   return (
     <div className="space-y-5">
+      <section className="space-y-2 rounded-2xl border-2 border-line p-3" aria-labelledby="sbs-settings">
+        <h3 id="sbs-settings" className="font-extrabold">🪟 Use Sidekick beside your lesson</h3>
+        <SideBySideGuide compact />
+      </section>
       <Field label="Theme">
         <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-2" role="radiogroup" aria-label="Theme">
           {THEMES.map((t) => (
