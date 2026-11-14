@@ -11,6 +11,8 @@ export interface PackWidget {
   title?: string;
   color: string;
   size: WidgetSize;
+  w?: number | null;
+  h?: number | null;
   locked: boolean;
   collapsed: boolean;
   config: Record<string, unknown>;
@@ -48,6 +50,8 @@ export function buildSettingsPack(s: PersistedState): SettingsPack {
     title: w.title ? (scrub(w.title, names) as string) : undefined,
     color: w.color,
     size: w.size,
+    w: w.w ?? null,
+    h: w.h ?? null,
     locked: w.locked,
     collapsed: w.collapsed,
     config: sanitizeConfig(w.type, w.config, names),
@@ -58,7 +62,7 @@ export function buildSettingsPack(s: PersistedState): SettingsPack {
     exportedAt: new Date().toISOString(),
     theme: s.prefs.themeId,
     workspaces: s.workspaces.map((w) => ({ name: w.name, widgets: w.widgetIds.map((id) => s.widgets[id]).filter(Boolean).map(packWidget) })),
-    favorites: s.favorites.map((f) => ({ name: scrub(f.name, names) as string, type: f.type, color: f.color, size: f.size, config: sanitizeConfig(f.type, f.config, names) })),
+    favorites: s.favorites.map((f) => ({ name: scrub(f.name, names) as string, type: f.type, color: f.color, size: f.size, w: f.w ?? null, h: f.h ?? null, config: sanitizeConfig(f.type, f.config, names) })),
     routines: s.routines.map((r) => ({
       name: r.name,
       icon: r.icon,
@@ -86,6 +90,8 @@ export function importSettingsPack(raw: unknown, now = Date.now()) {
         title: typeof pw.title === "string" ? pw.title.slice(0, 40) : undefined,
         color: typeof pw.color === "string" ? pw.color : DEFINITIONS[pw.type].defaultColor,
         size: pw.size === "S" || pw.size === "L" ? pw.size : "M",
+        w: typeof pw.w === "number" ? Math.min(4, Math.max(1, Math.round(pw.w))) : null,
+        h: typeof pw.h === "number" ? Math.min(1600, Math.max(120, Math.round(pw.h))) : null,
         locked: !!pw.locked,
         collapsed: !!pw.collapsed,
         workspaceId: id,

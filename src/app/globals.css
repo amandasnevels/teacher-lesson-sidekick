@@ -66,12 +66,7 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
   align-items: start;
 }
-@container (min-width: 500px) {
-  .widget-grid > [data-size="M"], .widget-grid > [data-size="L"] { grid-column: span 2; }
-}
-@container (min-width: 740px) {
-  .widget-grid > [data-size="L"] { grid-column: span 3; }
-}
+/* Column spans are set inline from each widget's preferred width, clamped to the columns that fit. */
 
 .widget-body { container-type: inline-size; }
 

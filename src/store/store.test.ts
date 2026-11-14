@@ -61,6 +61,16 @@ describe("widget instances", () => {
     expect(S().widgets[one].title).toBe("Centers wheel");
   });
 
+  it("duplicates and favorites keep the resized width and height", () => {
+    const t = add("timer");
+    S().updateWidget(t, { w: 3, h: 480 });
+    const copy = S().duplicateWidget(t)!;
+    expect(S().widgets[copy]).toMatchObject({ w: 3, h: 480 });
+    const fav = S().saveFavorite(t, "Big timer")!;
+    const fromFav = S().addFromFavorite(fav)!;
+    expect(S().widgets[fromFav]).toMatchObject({ w: 3, h: 480 });
+  });
+
   it("favorites of notes keep style but not text", () => {
     const n = add("notes", { fontSize: "lg", text: { general: "private" } });
     const fav = S().saveFavorite(n, "Big note")!;

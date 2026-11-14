@@ -5,7 +5,8 @@
 ## Foundation
 - ✅ Narrow-first responsive shell (280 px → desktop), tablet/touch targets ≥ 40 px 🧪 (280/320/375/768/1280)
 - ✅ Widget system: add, drag by handle (mouse/touch/keyboard), snap, lock/unlock, collapse, temporary expand,
-  preferred size S/M/L, per-widget color, title, duplicate, favorite, remove + Undo, Removed Widgets restore,
+  corner resizing (drag either bottom corner: width snaps to 1–4 grid columns, height in 8 px steps; arrow keys on
+  the grip; double-click/Home resets height; disabled while locked; narrow windows never overwrite the saved size) 🧪, per-widget color, title, duplicate, favorite, remove + Undo, Removed Widgets restore,
   confirmed permanent delete, copy to another workspace 🧪
 - ✅ More menu exactly: Duplicate · Save Favorite · Change Color · Lock/Unlock · Expand · Remove · More Settings (no Up/Down) 🧪
 - ✅ Widget Library: search, categories, Favorites, Removed, Themed Packs, Recently used

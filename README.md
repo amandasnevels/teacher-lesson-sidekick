@@ -38,6 +38,8 @@ If Playwright's browser isn't installed on your machine, run `npx playwright ins
 
 - **＋ Add** opens the Widget Library (search, categories, Favorites, Removed Widgets, Packs).
 - Move widgets by their **⠿ handle** (mouse, touch, or keyboard: focus handle → Space → arrows → Space).
+- Resize widgets by dragging either **bottom corner**. Width snaps to grid columns; double-click a corner to fit
+  the height to the content again. Narrow windows stack widgets without changing your saved sizes.
 - Each widget's **⋯ menu**: Duplicate · Save Favorite · Change Color · Lock/Unlock · Expand · Remove · More Settings.
 - **Quick Dock** (bottom by default; top/left/right in Settings) holds one-tap actions, routines, favorites and widgets.
 - **Quick Find**: `Ctrl/⌘+K` or `/`. Try `5 min timer`, `pick student`, `roll dice`, `flip coin`, `spinner`.

@@ -27,7 +27,7 @@ function arcPath(i: number, n: number, r: number) {
   return `M 0 0 L ${p(a0)} A ${r} ${r} 0 ${large} 1 ${p(a1)} Z`;
 }
 
-export function Wheel({ options, rotation, spinning, durationMs, onDone, size }: { options: Opt[]; rotation: number; spinning: boolean; durationMs: number; onDone: () => void; size: number }) {
+export function Wheel({ options, rotation, spinning, durationMs, onDone, size }: { options: Opt[]; rotation: number; spinning: boolean; durationMs: number; onDone: () => void; size: number | string }) {
   const n = options.length;
   const R = 100;
   return (
@@ -99,7 +99,7 @@ function Body({ id, view }: WidgetProps) {
 
   return (
     <div className="space-y-3 text-center">
-      <Wheel options={options} rotation={rotation} spinning={spinning} durationMs={durationMs} onDone={() => setSpinning(false)} size={view === "expanded" ? 480 : 230} />
+      <Wheel options={options} rotation={rotation} spinning={spinning} durationMs={durationMs} onDone={() => setSpinning(false)} size={view === "expanded" ? 480 : "clamp(230px, 62cqi, 460px)"} />
       <p className={cx("min-h-8 text-2xl font-black", !spinning && result && "pop-in")} aria-live="polite" data-testid="spinner-result">
         {spinning ? "Spinning…" : result ? result.label : " "}
       </p>

@@ -1,5 +1,5 @@
 "use client";
-import { memo, useRef, useState, type CSSProperties } from "react";
+import { memo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import {
   ChevronDown,
@@ -20,7 +20,7 @@ import { useWidget } from "@/store/hooks";
 import { COLOR_KEYS, WIDGET_COLORS, colorOf } from "@/lib/colors";
 import { DEFINITIONS } from "@/widgets/definitions";
 import { WIDGET_MODULES } from "@/widgets/registry";
-import type { WidgetSize } from "@/lib/types";
+import { preferredSpan } from "@/lib/layout";
 import { Button, Field, IconButton, MenuItem, Modal, Popover, Segmented, cx, inputCls, usePrompt } from "./ui";
 
 export interface HandleProps {
@@ -30,12 +30,48 @@ export interface HandleProps {
   dragging: boolean;
 }
 
+export interface ResizeProps {
+  enabled: boolean;
+  resizing: boolean;
+  /** Card height in px, or null to fit content. */
+  height: number | null;
+  /** Live size badge while dragging. */
+  label: string | null;
+  onPointerDown: (e: ReactPointerEvent<HTMLElement>, corner: "left" | "right") => void;
+  onKeyDown: (e: ReactKeyboardEvent<HTMLElement>) => void;
+  onReset: () => void;
+}
+
+function ResizeGrip({ corner, title, resize }: { corner: "left" | "right"; title: string; resize: ResizeProps }) {
+  const right = corner === "right";
+  return (
+    <button
+      type="button"
+      aria-label={`Resize ${title} from the bottom-${corner} corner. Arrow keys change width and height; Home or double-click resets height.`}
+      title="Drag to resize · double-click to reset height"
+      data-testid={`resize-${corner}`}
+      onPointerDown={(e) => resize.onPointerDown(e, corner)}
+      onKeyDown={resize.onKeyDown}
+      onDoubleClick={resize.onReset}
+      className={cx(
+        "absolute bottom-0 z-10 flex h-7 w-7 touch-none items-end p-1 text-ink-soft opacity-50 transition-opacity hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:h-9 [@media(pointer:coarse)]:w-9 [@media(pointer:coarse)]:opacity-70",
+        right ? "right-0 cursor-nwse-resize justify-end rounded-br-3xl" : "left-0 cursor-nesw-resize justify-start rounded-bl-3xl",
+        resize.resizing && "opacity-100",
+      )}
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden className={right ? "" : "-scale-x-100"}>
+        <path d="M11 3 L3 11 M11 7 L7 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    </button>
+  );
+}
+
 export function accentStyle(color: string): CSSProperties {
   const c = colorOf(color);
   return { ["--accent" as string]: c.accent, ["--on-accent" as string]: c.ink };
 }
 
-export const WidgetFrame = memo(function WidgetFrame({ id, handle }: { id: string; handle?: HandleProps }) {
+export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize }: { id: string; handle?: HandleProps; resize?: ResizeProps }) {
   const w = useWidget(id);
   const expanded = useSidekick((s) => s.expandedWidgetId === id);
   const flashing = useSidekick((s) => s.flashWidgetId === id);
@@ -69,8 +105,11 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle }: { id: strin
         "widget-card relative rounded-3xl border border-line bg-card shadow-[0_2px_0_rgba(0,0,0,.04),0_6px_18px_-8px_rgba(30,40,80,.25)]",
         flashing && "flash",
         handle?.dragging && "shadow-2xl ring-4 ring-[var(--accent)]",
+        resize?.resizing && "ring-4 ring-[var(--accent)]",
+        resize?.height != null && "flex flex-col",
       )}
-      style={accentStyle(w.color)}
+      style={{ ...accentStyle(w.color), height: resize?.height ?? undefined }}
+      data-height={resize?.height ?? ""}
     >
       {promptEl}
       <div className={cx("flex items-center gap-1 rounded-t-3xl bg-soft py-1 pl-1 pr-1", w.collapsed && "rounded-b-3xl")}>
@@ -115,7 +154,7 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle }: { id: strin
       </div>
 
       {!w.collapsed && (
-        <div className="widget-body p-3">
+        <div className={cx("widget-body p-3", resize?.enabled && "pb-6", resize?.height != null && "min-h-0 flex-1 overflow-y-auto")}>
           {expanded ? (
             <div className="flex flex-col items-center gap-2 py-3 text-center text-sm text-ink-soft">
               Showing in expanded view
@@ -179,6 +218,17 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle }: { id: strin
         )}
       </Popover>
 
+      {resize?.enabled && (
+        <>
+          <ResizeGrip corner="left" title={title} resize={resize} />
+          <ResizeGrip corner="right" title={title} resize={resize} />
+        </>
+      )}
+      {resize?.label && (
+        <span className="pointer-events-none absolute bottom-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-ink px-2.5 py-1 text-xs font-bold text-card shadow" role="status" data-testid="resize-badge">
+          {resize.label}
+        </span>
+      )}
       {settingsOpen && <WidgetSettingsDialog id={id} onClose={() => setSettingsOpen(false)} onFavorite={saveFavorite} />}
     </section>
   );
@@ -197,17 +247,23 @@ function WidgetSettingsDialog({ id, onClose, onFavorite }: { id: string; onClose
         <Field label="Title">
           <input className={inputCls} value={w.title ?? ""} placeholder={def.name} maxLength={40} onChange={(e) => s().updateWidget(id, { title: e.target.value })} />
         </Field>
-        <Field label="Preferred size" hint="Used when the window is wide enough. Narrow windows stack widgets without changing this.">
-          <Segmented<WidgetSize>
-            label="Preferred size"
-            value={w.size}
-            onChange={(size) => s().updateWidget(id, { size })}
-            options={[
-              { value: "S", label: "Small" },
-              { value: "M", label: "Medium" },
-              { value: "L", label: "Large" },
-            ]}
+        <Field label="Preferred width" hint="Tip: drag a widget's bottom corners to resize it. Narrow windows stack widgets without changing your preference.">
+          <Segmented<number>
+            label="Preferred width"
+            value={preferredSpan(w.w, w.size)}
+            onChange={(span) => s().updateWidget(id, { w: span })}
+            options={[1, 2, 3, 4].map((n) => ({ value: n, label: `${n} col${n === 1 ? "" : "s"}` }))}
           />
+        </Field>
+        <Field label="Height">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{w.h ? `${w.h}px` : "Fits content"}</span>
+            {w.h != null && (
+              <Button size="sm" variant="outline" onClick={() => s().updateWidget(id, { h: null })}>
+                Fit content
+              </Button>
+            )}
+          </div>
         </Field>
         <Field label="Color">
           <div className="flex flex-wrap gap-1.5">

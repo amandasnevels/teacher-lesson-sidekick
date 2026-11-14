@@ -230,3 +230,60 @@ test.describe("microphone", () => {
     await expect(v.getByRole("button", { name: "Enable microphone" })).toBeEnabled();
   });
 });
+
+test("widgets resize by dragging a corner; size persists and narrow windows don't overwrite it", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  const card = page.locator("[data-widget-id]").first();
+  const before = (await card.boundingBox())!;
+  expect(await card.getAttribute("data-span")).toBe("2");
+
+  const grip = card.getByTestId("resize-right");
+  const g = (await grip.boundingBox())!;
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(g.x + 260, g.y + 120, { steps: 10 });
+  await expect(page.getByTestId("resize-badge")).toContainText("3 cols");
+  await page.mouse.up();
+  await expect(card).toHaveAttribute("data-span", "3");
+  const after = (await card.boundingBox())!;
+  expect(after.width).toBeGreaterThan(before.width + 200);
+  expect(after.height).toBeGreaterThan(before.height + 80);
+
+  // Bottom-left corner shrinks the width again.
+  const gl = (await card.getByTestId("resize-left").boundingBox())!;
+  await page.mouse.move(gl.x + gl.width / 2, gl.y + gl.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gl.x + 260, gl.y + 2, { steps: 10 });
+  await page.mouse.up();
+  await expect(card).toHaveAttribute("data-span", "2");
+  const resized = (await card.boundingBox())!;
+
+  await waitForSave(page);
+  await page.reload();
+  const card2 = page.locator("[data-widget-id]").first();
+  await expect(card2).toHaveAttribute("data-span", "2");
+  expect(Math.abs((await card2.boundingBox())!.height - resized.height)).toBeLessThan(2);
+
+  // Narrow window: everything stacks, but the saved preference returns on a wide window.
+  await page.setViewportSize({ width: 375, height: 800 });
+  await expect(card2).toHaveAttribute("data-span", "1");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(card2).toHaveAttribute("data-span", "2");
+});
+
+test("resize grips work from the keyboard and are hidden on locked widgets", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  const card = page.locator("[data-widget-id]").first();
+  await card.getByTestId("resize-right").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(card).toHaveAttribute("data-span", "3");
+  await page.keyboard.press("ArrowLeft");
+  await page.keyboard.press("ArrowLeft");
+  await expect(card).toHaveAttribute("data-span", "1");
+  await page.getByRole("button", { name: "More options for Timer" }).click();
+  await page.getByRole("menuitem", { name: "Lock" }).click();
+  await expect(card.getByTestId("resize-right")).toHaveCount(0);
+});

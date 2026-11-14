@@ -106,7 +106,11 @@ export interface WidgetInstance {
   color: string; // a palette key, see lib/colors.ts
   locked: boolean;
   collapsed: boolean;
-  size: WidgetSize; // preferred size; never overwritten by responsive layout
+  size: WidgetSize; // legacy preset, used when `w` is not set
+  /** Preferred width in grid columns (1–4). Never overwritten by responsive layout. */
+  w?: number | null;
+  /** Preferred card height in px; null/undefined = fit content. */
+  h?: number | null;
   workspaceId: string;
   /** Set when removed from the workspace. The instance & its data are preserved. */
   removedAt?: number | null;
@@ -120,6 +124,8 @@ export interface Favorite {
   type: WidgetType;
   color: string;
   size: WidgetSize;
+  w?: number | null;
+  h?: number | null;
   config: Record<string, unknown>;
   createdAt: number;
 }

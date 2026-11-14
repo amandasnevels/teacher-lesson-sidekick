@@ -69,9 +69,12 @@ as pressing the button. Quick Routines execute a fixed, predictable order of whi
 clear student records; each run is undoable. Quick Find uses a deterministic regex grammar
 (`lib/commands.ts`) plus plain search — no AI interpretation.
 
-## Responsive behaviour
-Narrow-first CSS grid with container queries: preferred sizes (S/M/L) only widen cards when the board is wide
-enough, so shrinking the window never overwrites saved sizes. Menus are portal popovers clamped to the
+## Responsive behaviour & resizing
+Narrow-first CSS grid (`auto-fill, minmax(min(100%, 230px), 1fr)`). Each widget stores a preferred width in
+columns (`w`, 1–4; legacy S/M/L presets map to 1/2/3) and an optional height (`h`, px). The board measures how
+many columns fit (`lib/layout.ts#gridColumnsFor`) and displays `min(w, cols)`, so shrinking the window never
+overwrites saved sizes. Corner grips preview the snapped size live and commit once on release (undoable); a
+drag only stores the dimension the teacher actually changed. Menus are portal popovers clamped to the
 viewport. The shell uses `overflow: clip` so programmatic scrolling can't shift the header.
 
 ## Privacy

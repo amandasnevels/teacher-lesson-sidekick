@@ -544,6 +544,8 @@ export const useSidekick = create<SidekickState>()((set, get) => {
         type: w.type,
         color: w.color,
         size: w.size,
+        w: w.w ?? null,
+        h: w.h ?? null,
         config,
         createdAt: Date.now(),
       };
@@ -553,7 +555,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     addFromFavorite(favoriteId) {
       const fav = get().favorites.find((f) => f.id === favoriteId);
       if (!fav) return null;
-      return get().addWidget(fav.type, { color: fav.color, size: fav.size, title: fav.name, config: structuredClone(fav.config) });
+      return get().addWidget(fav.type, { color: fav.color, size: fav.size, w: fav.w ?? null, h: fav.h ?? null, title: fav.name, config: structuredClone(fav.config) });
     },
     renameFavorite(id, name) {
       if (!name.trim()) return;
