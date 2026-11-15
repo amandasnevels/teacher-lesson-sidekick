@@ -40,7 +40,8 @@ export type WidgetType =
   | "quiz"
   | "fastfacts"
   | "hallpass"
-  | "ican";
+  | "ican"
+  | "iwill";
 
 export type WidgetSize = "S" | "M" | "L";
 

@@ -356,6 +356,18 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     usesRoster: false,
     defaultConfig: () => ({ heading: "Today I can…", items: [], fontSize: "lg", showCodes: true, grade: "3", subject: "ela" }),
   },
+  iwill: {
+    type: "iwill",
+    name: "I Will Statements",
+    emoji: "🗣️",
+    description: "Language goals from the ELPS, with sentence stems, for Emergent Bilingual students.",
+    category: "Learning",
+    keywords: ["i will", "elps", "language objective", "language target", "emergent bilingual", "eb", "ell", "esl", "sentence stem", "tracker"],
+    defaultColor: "teal",
+    defaultSize: "M",
+    usesRoster: false,
+    defaultConfig: () => ({ heading: "Today I will…", items: [], fontSize: "lg", showCodes: true, grade: "3", subject: "ela", elpsDomain: "all" }),
+  },
   quiz: {
     type: "quiz",
     name: "Quick Fact Game",

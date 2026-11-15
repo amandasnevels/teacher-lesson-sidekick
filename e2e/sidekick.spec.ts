@@ -444,3 +444,27 @@ test("I Can: search TEKS by grade, subject and keyword, add, and track as taught
   await expect(widget(page, "ican").getByTestId("ican-list")).toContainText("3.6F");
   await expect(widget(page, "ican").getByRole("button", { name: /Logged as taught today/ })).toBeVisible();
 });
+
+test("I Will: search ELPS by domain, add with a sentence stem, and track", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  await page.getByRole("button", { name: "Add widget", exact: true }).click();
+  await page.getByRole("button", { name: "Add new I Will Statements", exact: true }).click();
+  const w = widget(page, "iwill");
+  await w.getByRole("button", { name: /Find ELPS/ }).click();
+  const dialog = page.getByRole("dialog", { name: /Find ELPS/ });
+  await dialog.getByRole("radio", { name: /Writing/ }).click();
+  await dialog.getByRole("textbox", { name: "Search ELPS" }).fill("vocabulary");
+  await dialog.getByRole("checkbox", { name: /ELPS 5B/ }).click();
+  await dialog.getByRole("button", { name: /Add 1 to Sidekick/ }).click();
+  await expect(w.getByTestId("ican-list")).toContainText("I will write using newly acquired basic vocabulary");
+  await w.getByRole("button", { name: /Add sentence stem/ }).click();
+  await page.getByRole("dialog", { name: "Sentence stem" }).getByRole("textbox").fill("One new word I learned is ___. It means ___.");
+  await page.getByRole("button", { name: "Save stem" }).click();
+  await expect(w.getByTestId("iwill-stem")).toContainText("One new word I learned is ___.");
+  await waitForSave(page);
+  await page.reload();
+  await expect(widget(page, "iwill").getByTestId("iwill-stem")).toContainText("One new word I learned");
+  await widget(page, "iwill").getByRole("button", { name: /Tracker/ }).click();
+  await expect(page.getByTestId("teks-tracker")).toContainText("ELPS 5B");
+});

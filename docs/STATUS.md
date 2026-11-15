@@ -30,6 +30,15 @@
 - Note: high-school code prefixes (A1, G, A2, E1–E4, B, C, IPC, P, USH, WH, WG, GOV, ECO) are Sidekick's
   shorthand; the course name is always shown alongside. Re-run the script when TEA revises the TEKS.
 
+## I Will Statements (ELPS language goals)
+- ✅ Same widget design as I Can, in “I will” mode: type goals (“I will” added if missing) or search the ELPS 🧪
+- ✅ ELPS search by language domain (Listening, Speaking, Reading, Writing, Learning Strategies) + keyword or
+  code (3E / ELPS 3E); all 45 official cross-curricular SEs from 19 TAC §74.4(c), built by
+  `scripts/build-elps.py`; “I will” wording generated from each SE 🧪
+- ✅ Optional sentence stem per goal (with domain-specific suggestions), shown under the goal 🧪
+- ✅ Shares the taught tracker with I Can (“TEKS & ELPS taught tracker”), incl. ELPS coverage “N of 45” 🧪
+- 🔜 Proficiency-level supports (beginning → advanced high, from §74.4(d)) could be added next
+
 ## Hall Pass
 - ✅ Widget face: count of students out (optionally names, places and time out; overdue turns red); Check out /
   Check in buttons; collapsed view shows “N out” 🧪

@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { BookCheck, CalendarCheck, Check, Download, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { BookCheck, CalendarCheck, Check, Download, MessageSquareQuote, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useSidekick } from "@/store/store";
 import { useActiveClass, useConfig } from "@/store/hooks";
 import { uid } from "@/lib/ids";
 import { TEKS_GRADES, TEKS_SUBJECTS, loadTeks, localDateKey, searchTeks, wordPattern, type TeksData, type TeksItem, type TeksSubject } from "@/lib/teks";
 import type { TaughtEntry } from "@/lib/types";
+import { ELPS_DOMAINS, STEM_IDEAS, loadElps, searchElps, type ElpsData, type ElpsDomain, type ElpsItem } from "@/lib/elps";
 import { accentStyle } from "@/components/WidgetFrame";
-import { Button, EmptyState, Field, IconButton, Modal, Segmented, Toggle, cx, inputCls, useConfirm } from "@/components/ui";
+import { Button, EmptyState, Field, IconButton, Modal, Segmented, Toggle, cx, inputCls, useConfirm, usePrompt } from "@/components/ui";
 import type { WidgetModule, WidgetProps } from "../types";
 
 export interface ICanItem {
@@ -17,6 +18,9 @@ export interface ICanItem {
   teksId?: string | null;
   subject?: string | null;
   course?: string | null;
+  /** "I will" goals: language domain label and an optional sentence stem. */
+  domain?: string | null;
+  stem?: string | null;
 }
 export interface ICanConfig {
   heading: string;
@@ -25,16 +29,28 @@ export interface ICanConfig {
   showCodes: boolean;
   grade: string;
   subject: TeksSubject;
+  /** I Will widget: last ELPS domain searched. */
+  elpsDomain?: ElpsDomain | "all";
+}
+
+type Kind = "ican" | "iwill";
+const KIND = {
+  ican: { prefix: "I can", heading: "Today I can…", emptyTitle: "Add today’s objectives", emptyText: "Type your own, or search the TEKS by grade, subject and keyword.", find: "Find TEKS", codeLabel: (it: ICanItem) => `TEKS ${it.code}${it.course ? ` · ${it.course}` : ""}` },
+  iwill: { prefix: "I will", heading: "Today I will…", emptyTitle: "Add today’s language goals", emptyText: "Type your own, or search the ELPS by language domain and keyword.", find: "Find ELPS", codeLabel: (it: ICanItem) => `${it.code}${it.domain ? ` · ${it.domain}` : ""}` },
+} as const;
+
+function useKind(id: string): Kind {
+  return useSidekick((s) => (s.widgets[id]?.type === "iwill" ? "iwill" : "ican"));
 }
 
 const sizes = { md: "text-base", lg: "text-xl", xl: "text-3xl" };
 
-/** "I can" prefix for typed objectives that don't already have one. */
-export function normalizeObjective(raw: string): string {
+/** Adds "I can" / "I will" to typed objectives that don't already start with a stem. */
+export function normalizeObjective(raw: string, prefix = "I can"): string {
   const t = raw.replace(/\s+/g, " ").trim();
   if (!t) return "";
-  if (/^(i can|we can|students will|swbat|i will)\b/i.test(t)) return t;
-  return `I can ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
+  if (/^(i can|we can|students will|swbat|i will|we will)\b/i.test(t)) return t;
+  return `${prefix} ${t.charAt(0).toLowerCase()}${t.slice(1)}`;
 }
 
 function toEntry(it: ICanItem, date: string, cls: { id: string; name: string } | null): Omit<TaughtEntry, "id" | "loggedAt"> {
@@ -43,6 +59,9 @@ function toEntry(it: ICanItem, date: string, cls: { id: string; name: string } |
 
 function Body({ id, view }: WidgetProps) {
   const [c, set] = useConfig<ICanConfig>(id);
+  const kind = useKind(id);
+  const K = KIND[kind];
+  const [promptEl, prompt] = usePrompt();
   const color = useSidekick((s) => s.widgets[id]?.color ?? "sky");
   const cls = useActiveClass();
   const today = localDateKey();
@@ -57,10 +76,11 @@ function Body({ id, view }: WidgetProps) {
   return (
     <div className="space-y-3">
       {confirmEl}
-      <p className={cx("font-black uppercase tracking-wide text-ink-soft", big ? "text-2xl" : "text-xs")}>{c.heading || "Today I can…"}</p>
+      {promptEl}
+      <p className={cx("font-black uppercase tracking-wide text-ink-soft", big ? "text-2xl" : "text-xs")}>{c.heading || K.heading}</p>
       {items.length === 0 ? (
-        <EmptyState emoji="💡" title="Add today’s objectives">
-          <p className="text-sm text-ink-soft">Type your own, or search the TEKS by grade, subject and keyword.</p>
+        <EmptyState emoji={kind === "iwill" ? "🗣️" : "💡"} title={K.emptyTitle}>
+          <p className="text-sm text-ink-soft">{K.emptyText}</p>
         </EmptyState>
       ) : (
         <ol className="space-y-2" data-testid="ican-list">
@@ -70,12 +90,12 @@ function Body({ id, view }: WidgetProps) {
               <li key={it.id} className="group flex items-start gap-2 rounded-2xl bg-soft px-3 py-2">
                 <div className="min-w-0 flex-1">
                   <p className={cx("font-bold leading-snug", big ? "text-4xl" : sizes[c.fontSize] ?? sizes.lg)}>{it.text}</p>
-                  {c.showCodes && it.code && (
-                    <p className="mt-0.5 text-xs font-black text-ink-soft">
-                      TEKS {it.code}
-                      {it.course ? ` · ${it.course}` : ""}
+                  {it.stem && (
+                    <p className={cx("mt-1 rounded-xl bg-card/70 px-2 py-1 font-semibold italic", big ? "text-3xl" : "text-sm")} data-testid="iwill-stem">
+                      💬 {it.stem}
                     </p>
                   )}
+                  {c.showCodes && it.code && <p className="mt-0.5 text-xs font-black text-ink-soft">{K.codeLabel(it)}</p>}
                 </div>
                 <div className="flex shrink-0 flex-col gap-1">
                   <IconButton
@@ -91,6 +111,19 @@ function Body({ id, view }: WidgetProps) {
                   >
                     {done ? <CalendarCheck size={16} /> : <BookCheck size={16} />}
                   </IconButton>
+                  {kind === "iwill" && (
+                    <IconButton
+                      size="md"
+                      label={it.stem ? `Edit sentence stem: ${it.text}` : `Add sentence stem: ${it.text}`}
+                      onClick={async () => {
+                        const idea = STEM_IDEAS[(Object.entries({ Listening: "listening", Speaking: "speaking", Reading: "reading", Writing: "writing", "Learning Strategies": "strategies" }).find(([k]) => k === it.domain)?.[1] ?? "speaking") as ElpsDomain][0];
+                        const v = await prompt("Sentence stem", `Students can use this frame (e.g. “${idea}”). Leave blank to remove.`, it.stem ?? idea, "Save stem");
+                        if (v !== null) set({ items: items.map((x) => (x.id === it.id ? { ...x, stem: v.trim() || null } : x)) });
+                      }}
+                    >
+                      <MessageSquareQuote size={16} />
+                    </IconButton>
+                  )}
                   <IconButton size="md" label={`Remove from widget: ${it.text}`} onClick={() => set({ items: items.filter((x) => x.id !== it.id) })}>
                     <X size={16} />
                   </IconButton>
@@ -102,7 +135,7 @@ function Body({ id, view }: WidgetProps) {
       )}
       <div className="flex flex-wrap gap-1.5">
         <Button variant="accent" size="sm" onClick={() => setDialog("search")}>
-          <Search size={14} /> Find TEKS
+          <Search size={14} /> {K.find}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setDialog("type")}>
           <Pencil size={14} /> Type my own
@@ -117,7 +150,7 @@ function Body({ id, view }: WidgetProps) {
         )}
       </div>
       {dialog === "type" && <TypeDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} />}
-      {dialog === "search" && <SearchDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} />}
+      {dialog === "search" && (kind === "iwill" ? <ElpsSearchDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} /> : <SearchDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} />)}
       {dialog === "tracker" && <TrackerDialog style={accentStyle(color)} onClose={() => setDialog(null)} />}
     </div>
   );
@@ -125,8 +158,9 @@ function Body({ id, view }: WidgetProps) {
 
 function TypeDialog({ id, style, onClose }: { id: string; style: React.CSSProperties; onClose: () => void }) {
   const [c, set] = useConfig<ICanConfig>(id);
+  const K = KIND[useKind(id)];
   const [draft, setDraft] = useState("");
-  const lines = draft.split(/\r?\n/).map(normalizeObjective).filter(Boolean);
+  const lines = draft.split(/\r?\n/).map((l) => normalizeObjective(l, K.prefix)).filter(Boolean);
   return (
     <Modal
       open
@@ -142,8 +176,8 @@ function TypeDialog({ id, style, onClose }: { id: string; style: React.CSSProper
         </>
       }
     >
-      <Field label="One objective per line" hint="“I can” is added for you if you leave it off.">
-        <textarea data-autofocus className={cx(inputCls, "min-h-36 py-2")} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={"I can make inferences using text evidence.\nmultiply two-digit numbers"} aria-label="Objectives, one per line" />
+      <Field label="One objective per line" hint={`“${K.prefix}” is added for you if you leave it off.`}>
+        <textarea data-autofocus className={cx(inputCls, "min-h-36 py-2")} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={K.prefix === "I will" ? "I will explain my answer to a partner using the word “because.”\nwrite two sentences using new vocabulary" : "I can make inferences using text evidence.\nmultiply two-digit numbers"} aria-label="Objectives, one per line" />
       </Field>
       {lines.length > 0 && (
         <ul className="mt-3 space-y-1 text-sm">
@@ -282,6 +316,107 @@ function SearchDialog({ id, style, onClose }: { id: string; style: React.CSSProp
   );
 }
 
+function ElpsSearchDialog({ id, style, onClose }: { id: string; style: React.CSSProperties; onClose: () => void }) {
+  const [c, set] = useConfig<ICanConfig>(id);
+  const cls = useActiveClass();
+  const [data, setData] = useState<ElpsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [picked, setPicked] = useState<Record<string, ElpsItem>>({});
+  const [logIt, setLogIt] = useState(true);
+  const [date, setDate] = useState(localDateKey());
+  const domain = c.elpsDomain ?? "all";
+  useEffect(() => {
+    loadElps().then(setData).catch(() => setError("The ELPS list couldn’t load. Check your connection and try again."));
+  }, []);
+  const results = useMemo(() => (data ? searchElps(data.items, domain, query) : []), [data, domain, query]);
+  const pickedList = Object.values(picked);
+  const toItem = (e: ElpsItem): ICanItem => ({ id: uid("iw"), text: e.iwill, code: e.code, teksId: e.id, subject: "elps", course: "ELPS", domain: e.domainLabel, stem: null });
+
+  const addSelected = () => {
+    const st = useSidekick.getState();
+    const existing = new Set((c.items ?? []).map((x) => x.teksId).filter(Boolean));
+    set({ items: [...(c.items ?? []), ...pickedList.filter((e) => !existing.has(e.id)).map(toItem)] });
+    let logged = 0;
+    if (logIt) logged = st.logTaught(pickedList.map((e) => toEntry(toItem(e), date, cls)));
+    st.toast({ message: `Added ${pickedList.length} I will statement${pickedList.length === 1 ? "" : "s"}${logIt ? ` · ${logged} logged for ${date === localDateKey() ? "today" : date}` : ""}`, tone: "success" });
+    onClose();
+  };
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      wide
+      title="Find ELPS “I will” statements"
+      panelStyle={style}
+      footer={
+        <div className="flex w-full flex-wrap items-center gap-2">
+          <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm font-bold">
+            <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={logIt} onChange={(e) => setLogIt(e.target.checked)} />
+            Log in tracker as taught on
+          </label>
+          <input type="date" className="min-h-10 rounded-xl border-2 border-line bg-card px-2 text-sm text-ink focus:border-brand focus:outline-none" value={date} onChange={(e) => setDate(e.target.value || localDateKey())} disabled={!logIt} aria-label="Date taught" />
+          <span className="flex-1" />
+          <Button variant="primary" disabled={!pickedList.length} onClick={addSelected}>
+            <Plus size={16} /> Add {pickedList.length || ""} to Sidekick
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-sm text-ink-soft">English Language Proficiency Standards apply in every grade and subject. Pair an “I will” language goal with your “I can” content objective.</p>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Language domain">
+          {ELPS_DOMAINS.map((d) => (
+            <button key={d.value} type="button" role="radio" aria-checked={domain === d.value} onClick={() => set({ elpsDomain: d.value })} className={cx("min-h-9 rounded-full px-3 text-sm font-bold", domain === d.value ? "bg-accent text-on-accent" : "bg-black/5 dark:bg-white/10")}>
+              {d.emoji} {d.label}
+            </button>
+          ))}
+        </div>
+        <label className="relative block">
+          <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
+          <input data-autofocus className={cx(inputCls, "pl-10")} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Type a word like vocabulary, retell, or a code like 3E" aria-label="Search ELPS" />
+        </label>
+        {error && <p role="alert" className="text-sm font-semibold text-[#d93036]">{error}</p>}
+        {!data && !error && <p className="animate-pulse text-sm text-ink-soft" role="status">Loading ELPS…</p>}
+        {data && (
+          <>
+            <p className="text-xs font-semibold text-ink-soft" data-testid="elps-count" aria-live="polite">
+              {results.length} statement{results.length === 1 ? "" : "s"}{pickedList.length > 0 && ` · ${pickedList.length} selected`}
+            </p>
+            <ul className="space-y-1.5" data-testid="elps-results">
+              {results.map((it) => {
+                const on = !!picked[it.id];
+                return (
+                  <li key={it.id}>
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={on}
+                      onClick={() => setPicked((p) => { const n = { ...p }; if (n[it.id]) delete n[it.id]; else n[it.id] = it; return n; })}
+                      className={cx("flex w-full items-start gap-3 rounded-2xl border-2 px-3 py-2 text-left transition", on ? "border-accent bg-soft" : "border-line hover:border-accent/60")}
+                    >
+                      <span className={cx("mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2", on ? "border-accent bg-accent text-on-accent" : "border-line")}>
+                        {on && <Check size={16} strokeWidth={3} />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-xs font-black text-ink-soft">{it.code} · {it.domainLabel}</span>
+                        <span className="block text-sm font-semibold leading-snug">{highlight(it.iwill, query)}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {results.length === 0 && <li className="py-4 text-center text-sm text-ink-soft">No ELPS match “{query}”. Try a shorter word or “All”.</li>}
+            </ul>
+            <p className="text-[11px] text-ink-soft">Source: {data.source}. Retrieved {data.retrieved}. “I will” wording is generated from each student expectation.</p>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function csv(entries: TaughtEntry[]) {
   const cell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const rows = [["Date", "TEKS", "Course", "Class", "I can statement"], ...entries.map((e) => [e.date, e.code ?? "", e.course ?? "", e.className ?? "", e.text])];
@@ -295,8 +430,12 @@ function TrackerDialog({ style, onClose }: { style: React.CSSProperties; onClose
   const [classFilter, setClassFilter] = useState("");
   const [coverage, setCoverage] = useState<{ course: string; subject: string } | null>(null);
   const [data, setData] = useState<TeksData | null>(null);
+  const [elps, setElps] = useState<ElpsData | null>(null);
   const st = useSidekick.getState;
-  useEffect(() => { loadTeks().then(setData).catch(() => {}); }, []);
+  useEffect(() => {
+    loadTeks().then(setData).catch(() => {});
+    loadElps().then(setElps).catch(() => {});
+  }, []);
 
   const cutoff = useMemo(() => {
     const d = new Date();
@@ -311,8 +450,11 @@ function TrackerDialog({ style, onClose }: { style: React.CSSProperties; onClose
   const byDate = rows.reduce<Record<string, TaughtEntry[]>>((acc, t) => ((acc[t.date] ??= []).push(t), acc), {});
   const coursesTaught = Array.from(new Set(taught.filter((t) => t.course && t.subject).map((t) => `${t.subject}|${t.course}`))).map((k) => ({ subject: k.split("|")[0], course: k.split("|")[1] }));
 
-  const cov = coverage && data ? (() => {
-    const all = data.items.filter((i) => i.subject === coverage.subject && i.course === coverage.course);
+  const cov = coverage && (coverage.subject === "elps" ? elps : data) ? (() => {
+    const all: { id: string; code: string; ican: string }[] =
+      coverage.subject === "elps"
+        ? elps!.items.map((e) => ({ id: e.id, code: e.code, ican: e.iwill }))
+        : data!.items.filter((i) => i.subject === coverage.subject && i.course === coverage.course);
     const done = new Set(taught.filter((t) => !classFilter || t.classId === classFilter).map((t) => t.teksId));
     return { all, done: all.filter((i) => done.has(i.id)), todo: all.filter((i) => !done.has(i.id)) };
   })() : null;
@@ -326,7 +468,7 @@ function TrackerDialog({ style, onClose }: { style: React.CSSProperties; onClose
   };
 
   return (
-    <Modal open onClose={onClose} wide title="TEKS taught tracker" panelStyle={style}>
+    <Modal open onClose={onClose} wide title="TEKS & ELPS taught tracker" panelStyle={style}>
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Segmented label="Time range" value={range} onChange={setRange} options={[{ value: "week", label: "7 days" }, { value: "month", label: "31 days" }, { value: "all", label: "All" }]} />
@@ -344,13 +486,13 @@ function TrackerDialog({ style, onClose }: { style: React.CSSProperties; onClose
             <div className="flex flex-wrap gap-1.5">
               {coursesTaught.map((x) => {
                 const on = coverage?.course === x.course && coverage?.subject === x.subject;
-                const label = `${x.course} ${({ ela: "ELAR", math: "Math", science: "Science", social: "Social Studies" } as Record<string, string>)[x.subject] ?? ""}`;
+                const label = x.subject === "elps" ? "ELPS (all grades)" : `${x.course} ${({ ela: "ELAR", math: "Math", science: "Science", social: "Social Studies" } as Record<string, string>)[x.subject] ?? ""}`;
                 return <button key={`${x.subject}|${x.course}`} type="button" aria-pressed={on} onClick={() => setCoverage(on ? null : x)} className={cx("min-h-9 rounded-full px-3 text-xs font-bold", on ? "bg-accent text-on-accent" : "bg-black/5 dark:bg-white/10")}>{label}</button>;
               })}
             </div>
             {cov && (
               <div className="mt-3 space-y-2">
-                <p className="text-sm font-bold" data-testid="teks-coverage">{cov.done.length} of {cov.all.length} TEKS taught</p>
+                <p className="text-sm font-bold" data-testid="teks-coverage">{cov.done.length} of {cov.all.length} {coverage?.subject === "elps" ? "ELPS" : "TEKS"} taught</p>
                 <div className="h-2.5 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full rounded-full bg-accent" style={{ width: `${cov.all.length ? (cov.done.length / cov.all.length) * 100 : 0}%` }} /></div>
                 <details className="text-sm">
                   <summary className="cursor-pointer font-semibold">Not taught yet ({cov.todo.length})</summary>
@@ -404,10 +546,12 @@ function Settings({ id }: { id: string }) {
       <Field label="Text size">
         <Segmented label="Text size" value={c.fontSize} onChange={(fontSize) => set({ fontSize })} options={[{ value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
       </Field>
-      <Toggle checked={c.showCodes} onChange={(showCodes) => set({ showCodes })} label="Show TEKS codes under statements" />
+      <Toggle checked={c.showCodes} onChange={(showCodes) => set({ showCodes })} label="Show TEKS / ELPS codes under statements" />
     </div>
   );
 }
 
 const ICanWidget: WidgetModule = { Body, Mini, Settings };
+/** Same widget, "I will" mode with the ELPS (chosen by widget type). */
+export const IWillWidget: WidgetModule = { Body, Mini, Settings };
 export default ICanWidget;

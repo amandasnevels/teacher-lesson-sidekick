@@ -25,7 +25,7 @@ import Reminders from "./reminders/Reminders";
 import Quiz from "./quiz/Quiz";
 import FastFacts from "./fastfacts/FastFacts";
 import HallPass from "./hallpass/HallPass";
-import ICan from "./ican/ICan";
+import ICan, { IWillWidget } from "./ican/ICan";
 
 export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
   timer: Timer,
@@ -54,4 +54,5 @@ export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
   fastfacts: FastFacts,
   hallpass: HallPass,
   ican: ICan,
+  iwill: IWillWidget,
 };
