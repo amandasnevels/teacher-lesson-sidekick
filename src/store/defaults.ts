@@ -144,6 +144,7 @@ export function createDefaultState(): PersistedState {
     dock,
     records: { points: {}, participation: {}, picker: {}, rewards: {}, hallpass: {} },
     recentWidgetTypes: [],
+    taught: [],
     sync: { themes: false, layouts: false, presets: false, favorites: false, notes: false, classRecords: false },
   };
 }

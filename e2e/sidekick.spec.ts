@@ -417,3 +417,30 @@ test("Roster manager button opens the roster right away", async ({ page }) => {
   await picker.getByRole("button", { name: "Roster manager" }).click();
   await expect(page.getByRole("dialog", { name: "Settings" }).getByRole("textbox", { name: "Paste student names" })).toBeVisible();
 });
+
+test("I Can: search TEKS by grade, subject and keyword, add, and track as taught", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  await page.getByRole("button", { name: "Add widget", exact: true }).click();
+  await page.getByRole("button", { name: "Add new I Can Statements", exact: true }).click();
+  const w = widget(page, "ican");
+  await w.getByRole("button", { name: /Find TEKS/ }).click();
+  const dialog = page.getByRole("dialog", { name: /Find TEKS/ });
+  await dialog.getByRole("combobox", { name: "Grade level" }).selectOption("3");
+  await dialog.getByRole("radio", { name: "ELAR" }).click();
+  await dialog.getByRole("textbox", { name: "Search TEKS" }).fill("infer");
+  const hit = dialog.getByRole("checkbox", { name: /3\.6F/ });
+  await expect(hit).toContainText("I can make inferences and use evidence to support understanding.");
+  await hit.click();
+  await expect(dialog.getByRole("checkbox", { name: /Log in tracker/ })).toBeChecked();
+  await dialog.getByRole("button", { name: /Add 1 to Sidekick/ }).click();
+  await expect(w.getByTestId("ican-list")).toContainText("I can make inferences");
+  await expect(w.getByTestId("ican-list")).toContainText("TEKS 3.6F");
+  await w.getByRole("button", { name: /Tracker/ }).click();
+  await expect(page.getByTestId("teks-tracker")).toContainText("3.6F");
+  await page.keyboard.press("Escape");
+  await waitForSave(page);
+  await page.reload();
+  await expect(widget(page, "ican").getByTestId("ican-list")).toContainText("3.6F");
+  await expect(widget(page, "ican").getByRole("button", { name: /Logged as taught today/ })).toBeVisible();
+});

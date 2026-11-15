@@ -5,6 +5,7 @@ import type {
   DockItemInput,
   HallPassData,
   HallPassEntry,
+  TaughtEntry,
   Favorite,
   ParticipationData,
   PersistedState,
@@ -167,6 +168,10 @@ interface Actions {
   hallCheckInAll(classId: string): void;
   hallMarkReminded(classId: string, entryId: string): void;
   hallClearLog(classId: string): void;
+
+  // teaching tracker
+  logTaught(entries: Omit<TaughtEntry, "id" | "loggedAt">[]): number;
+  removeTaught(id: string): void;
 }
 
 export type SidekickState = PersistedState & UIState & Actions;
@@ -654,6 +659,26 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     setPickerDrawn(key, drawn) {
       set((s) => ({ records: { ...s.records, picker: { ...s.records.picker, [key]: drawn } } }));
     },
+    logTaught(entries) {
+      const s = get();
+      const key = (e: { date: string; text: string; teksId?: string | null; classId?: string | null }) => `${e.date}|${e.teksId ?? e.text}|${e.classId ?? ""}`;
+      const have = new Set(s.taught.map(key));
+      const add: TaughtEntry[] = [];
+      for (const e of entries) {
+        if (have.has(key(e))) continue; // already logged that day for that class
+        have.add(key(e));
+        add.push({ ...e, id: uid("tt"), loggedAt: Date.now() });
+      }
+      if (add.length) {
+        s.pushUndo("Log taught", ["taught"]);
+        set({ taught: [...s.taught, ...add].slice(-5000) });
+      }
+      return add.length;
+    },
+    removeTaught(id) {
+      get().pushUndo("Remove taught entry", ["taught"]);
+      set((s) => ({ taught: s.taught.filter((t) => t.id !== id) }));
+    },
     hallCheckOut(classId, studentId, destination, source = "teacher") {
       const s = get();
       const cls = s.classes.find((c) => c.id === classId);
@@ -711,5 +736,6 @@ export function persistedSnapshot(): PersistedState {
     records: s.records,
     recentWidgetTypes: s.recentWidgetTypes,
     sync: s.sync,
+    taught: s.taught,
   };
 }

@@ -39,7 +39,8 @@ export type WidgetType =
   | "reminders"
   | "quiz"
   | "fastfacts"
-  | "hallpass";
+  | "hallpass"
+  | "ican";
 
 export type WidgetSize = "S" | "M" | "L";
 
@@ -228,6 +229,20 @@ export interface HallPassData {
   log: HallPassEntry[]; // completed trips, newest last
 }
 
+/** A record that an objective / TEKS was taught on a given day (teacher data, no student info). */
+export interface TaughtEntry {
+  id: string;
+  date: string; // YYYY-MM-DD (local)
+  loggedAt: number;
+  text: string; // the "I can" statement
+  teksId?: string | null; // e.g. "111.5:3.4K"
+  code?: string | null; // e.g. "3.4K"
+  subject?: string | null;
+  course?: string | null;
+  classId?: string | null;
+  className?: string | null;
+}
+
 export interface SyncPreferences {
   themes: boolean;
   layouts: boolean;
@@ -253,4 +268,6 @@ export interface PersistedState {
   records: ClassRecords;
   recentWidgetTypes: WidgetType[];
   sync: SyncPreferences;
+  /** Objectives / TEKS taught, by day. */
+  taught: TaughtEntry[];
 }

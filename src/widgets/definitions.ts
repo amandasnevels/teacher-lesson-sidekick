@@ -344,6 +344,18 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     usesRoster: true,
     defaultConfig: () => ({ destinations: ["Restroom", "Nurse", "Water", "Office"], display: "names", reminderOn: true, reminderMinutes: 5, reminderSound: true }),
   },
+  ican: {
+    type: "ican",
+    name: "I Can Statements",
+    emoji: "💡",
+    description: "Post today’s objectives, search the TEKS, and track what you’ve taught.",
+    category: "Learning",
+    keywords: ["i can", "objective", "learning target", "teks", "standards", "goal", "tracker", "taught"],
+    defaultColor: "sky",
+    defaultSize: "M",
+    usesRoster: false,
+    defaultConfig: () => ({ heading: "Today I can…", items: [], fontSize: "lg", showCodes: true, grade: "3", subject: "ela" }),
+  },
   quiz: {
     type: "quiz",
     name: "Quick Fact Game",

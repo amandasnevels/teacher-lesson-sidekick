@@ -48,7 +48,7 @@ export default function App() {
       const changed =
         s.prefs !== prev.prefs || s.classes !== prev.classes || s.activeClassId !== prev.activeClassId || s.workspaces !== prev.workspaces ||
         s.activeWorkspaceId !== prev.activeWorkspaceId || s.widgets !== prev.widgets || s.sessions !== prev.sessions || s.favorites !== prev.favorites ||
-        s.routines !== prev.routines || s.dock !== prev.dock || s.records !== prev.records || s.recentWidgetTypes !== prev.recentWidgetTypes || s.sync !== prev.sync;
+        s.routines !== prev.routines || s.dock !== prev.dock || s.records !== prev.records || s.recentWidgetTypes !== prev.recentWidgetTypes || s.sync !== prev.sync || s.taught !== prev.taught;
       if (!changed) return;
       prev = persistedSnapshot();
       markDirty();

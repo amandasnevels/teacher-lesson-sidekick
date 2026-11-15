@@ -21,7 +21,7 @@ function store(): UseStore {
 
 export const PERSISTED_KEYS: (keyof PersistedState)[] = [
   "version", "prefs", "classes", "activeClassId", "workspaces", "activeWorkspaceId", "widgets",
-  "sessions", "favorites", "routines", "dock", "records", "recentWidgetTypes", "sync",
+  "sessions", "favorites", "routines", "dock", "records", "recentWidgetTypes", "sync", "taught",
 ];
 
 export function pickPersisted(s: PersistedState): PersistedState {
