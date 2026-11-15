@@ -4,7 +4,6 @@ import { useSidekick } from "@/store/store";
 import { useActiveClass } from "@/store/hooks";
 import { DEMO_NAMES } from "@/store/defaults";
 import { namesFromPaste } from "@/lib/roster";
-import { ensureWidget } from "@/store/actions";
 import { Button, EmptyState, inputCls } from "@/components/ui";
 
 /**
@@ -42,7 +41,7 @@ export function RosterGate({ children }: { children: ReactNode }) {
         <Button variant="accent" size="sm" disabled={!paste.trim()} onClick={() => { createWith(namesFromPaste(paste), "My Class"); setPaste(""); }}>
           Add students
         </Button>
-        <Button variant="outline" size="sm" onClick={() => ensureWidget("roster", { reveal: true })}>
+        <Button variant="outline" size="sm" onClick={() => useSidekick.getState().openSettings("classes")}>
           Roster manager
         </Button>
         {!cls && (

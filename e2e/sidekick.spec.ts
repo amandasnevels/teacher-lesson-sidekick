@@ -392,3 +392,28 @@ test("hall pass: quick check-out and check-in, logged with times", async ({ page
   await widget(page, "hallpass").getByRole("button", { name: /Out-of-room log/ }).click();
   await expect(page.getByTestId("hall-log")).toContainText("Cam Delgado");
 });
+
+test("Roster manager button opens the roster right away", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await openApp(page);
+  const picker = widget(page, "picker");
+  // No class yet: the pop-up offers to create one.
+  await picker.getByRole("button", { name: "Roster manager" }).click();
+  const dialog = page.getByRole("dialog", { name: "Settings" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("textbox", { name: "New class name" }).fill("Period 3");
+  await dialog.getByRole("button", { name: "Create" }).click();
+  // New, empty class: opens on the Add tab.
+  await dialog.getByRole("textbox", { name: "Paste student names" }).fill("Ana\nBen\nCy");
+  await dialog.getByRole("button", { name: "Add pasted names" }).click();
+  await expect(dialog.getByRole("status")).toContainText("Added 3");
+  await dialog.getByRole("button", { name: "Close", exact: true }).last().click();
+  await expect(picker.getByRole("button", { name: "Pick", exact: true })).toBeEnabled();
+  await expect(picker.getByTestId("picker-progress")).toContainText("0 of 3");
+  // With a class that has no students, it goes straight to Add.
+  await page.getByTestId("class-select").selectOption("__new");
+  await page.getByRole("dialog").getByRole("textbox").fill("Period 4");
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  await picker.getByRole("button", { name: "Roster manager" }).click();
+  await expect(page.getByRole("dialog", { name: "Settings" }).getByRole("textbox", { name: "Paste student names" })).toBeVisible();
+});

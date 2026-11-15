@@ -248,6 +248,13 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     },
     flashWidget(id) {
       set({ flashWidgetId: id });
+      // Bring it on screen (it may have just been added at the bottom of the workspace).
+      if (typeof document !== "undefined")
+        setTimeout(() => {
+          const el = document.querySelector(`[data-widget-id="${id}"]`);
+          const reduce = document.documentElement.classList.contains("reduce-motion");
+          el?.scrollIntoView?.({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+        }, 60);
       setTimeout(() => {
         if (get().flashWidgetId === id) set({ flashWidgetId: null });
       }, 1400);

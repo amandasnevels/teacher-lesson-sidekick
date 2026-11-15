@@ -48,7 +48,7 @@ function requireRoster(): boolean {
   const s = S();
   const cls = s.classes.find((c) => c.id === s.activeClassId);
   if (cls && cls.students.length > 0) return true;
-  s.toast({ message: "Add a class roster first.", tone: "warn", actionLabel: "Open roster", onAction: () => ensureWidget("roster", { reveal: true }) });
+  s.toast({ message: "Add a class roster first.", tone: "warn", actionLabel: "Open roster", onAction: () => S().openSettings("classes") });
   return false;
 }
 

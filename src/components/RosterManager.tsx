@@ -22,7 +22,7 @@ export function RosterManager({ compact = false }: { compact?: boolean }) {
   const classes = useSelectValue((st) => st.classes.map((c) => ({ id: c.id, name: c.name })));
   const workspaces = useSelectValue((st) => st.workspaces.map((w) => ({ id: w.id, name: w.name })));
   const retention = useSidekick((st) => st.prefs.studentDataRetention);
-  const [tab, setTab] = useState<"students" | "add" | "groups" | "class">("students");
+  const [tab, setTab] = useState<"students" | "add" | "groups" | "class">(cls && cls.students.length === 0 ? "add" : "students");
   const [newName, setNewName] = useState("");
   const [paste, setPaste] = useState("");
   const [message, setMessage] = useState<string | null>(null);
