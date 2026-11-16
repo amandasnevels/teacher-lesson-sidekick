@@ -149,10 +149,13 @@ describe("eight presets", () => {
     expect(sg.workspaces[0].widgetIds.map((id) => sg.widgets[id].type)).toContain("hallpass");
     const tr = freshSession("transition");
     const trw = tr.workspaces[0].widgetIds.map((id) => tr.widgets[id]);
-    expect(trw.map((w) => w.type)).toEqual(["champs", "voice", "timer", "points", "notes"]);
-    expect(trw[0].config.active).toBe("transitions");
-    expect(trw[4].title).toBe("Student Reminders");
-    expect(trw.map((w) => w.w)).toEqual([1, 2, 1, 2, 1]);
+    const trOf = (t: string) => trw.find((w) => w.type === t)!;
+    expect(trw.map((w) => w.type)).toEqual(["champs", "voice", "timer", "quiz", "notes", "points"]);
+    expect(trOf("champs").config.active).toBe("transitions");
+    expect(trOf("voice").config.level).toBe("partner");
+    expect(trOf("quiz").config).toMatchObject({ grade: "3-5", subject: "ela" });
+    expect(trOf("notes").title).toBe("Student Reminders");
+    expect(trw.map((w) => w.w)).toEqual([1, 2, 1, 2, 1, 2]);
     const c = freshSession("centers");
     const timer = c.workspaces[0].widgetIds.map((id) => c.widgets[id]).find((w) => w.type === "timer")!;
     expect(timer.config).toMatchObject({ durationSec: 900, stations: { enabled: true } });
