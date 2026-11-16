@@ -92,29 +92,52 @@ export const DEFAULT_CHAMPS: Record<ChampsPresetId, ChampsExpectations> = {
   },
 };
 
-/** Icon shown on each tile. "level" = the voice level number read from the Conversation text. */
+/**
+ * What each card shows: "picture" = the card artwork (public/champs/<preset>-<key>.webp),
+ * "level" = a big voice-level number read from the Conversation details, or an emoji.
+ */
 export type ChampsIcons = Record<ChampsKey, string>;
 
+const allPictures = (): ChampsIcons => ({ C: "picture", H: "picture", A: "picture", M: "picture", P: "picture", S: "picture" });
 export const DEFAULT_ICONS: Record<ChampsPresetId, ChampsIcons> = {
-  wholeGroup: { C: "level", H: "✋", A: "🧑‍🏫", M: "🪑", P: "👂", S: "⭐" },
-  smallGroup: { C: "level", H: "👥", A: "🧩", M: "🪑", P: "🗣️", S: "⭐" },
-  stations: { C: "level", H: "📋", A: "🧩", M: "🔄", P: "🤝", S: "⭐" },
-  independent: { C: "level", H: "✋", A: "✏️", M: "🪑", P: "💪", S: "⭐" },
-  partner: { C: "level", H: "🧑‍🤝‍🧑", A: "🧑‍🤝‍🧑", M: "🪑", P: "👂", S: "⭐" },
-  transitions: { C: "level", H: "✋", A: "🎒", M: "🚶", P: "🔔", S: "⭐" },
-  assessments: { C: "level", H: "✋", A: "📝", M: "🪑", P: "📖", S: "⭐" },
-  teacherTable: { C: "level", H: "🧑‍🏫", A: "📚", M: "🪑", P: "👀", S: "⭐" },
+  wholeGroup: allPictures(),
+  smallGroup: allPictures(),
+  stations: allPictures(),
+  independent: allPictures(),
+  partner: allPictures(),
+  transitions: allPictures(),
+  assessments: allPictures(),
+  teacherTable: allPictures(),
 };
 
-/** Icons teachers can pick from in More Settings. */
-export const ICON_CHOICES = ["level", "🤫", "🗣️", "💬", "✋", "🙋", "👥", "🧑‍🤝‍🧑", "🧑‍🏫", "📋", "📖", "📚", "✏️", "📝", "🧩", "💻", "🎒", "🪑", "🚶", "🔄", "👂", "👀", "🤝", "💪", "🔔", "⭐", "🏆", "✅"];
+/** Choices in More Settings. */
+export const ICON_CHOICES = ["picture", "level", "🤫", "🗣️", "💬", "✋", "🙋", "👥", "🧑‍🤝‍🧑", "🧑‍🏫", "📋", "📖", "📚", "✏️", "📝", "🧩", "💻", "🎒", "🪑", "🚶", "🔄", "👂", "👀", "🤝", "💪", "🔔", "⭐", "🏆", "✅"];
+
+export const artFor = (preset: ChampsPresetId, key: ChampsKey | "preset") => `/champs/${preset}-${key}.webp`;
+
+/** Short captions shown on each card (from the card artwork). */
+export const DEFAULT_CAPTIONS: Record<ChampsPresetId, ChampsExpectations> = {
+  wholeGroup: { C: "Speak when called on", H: "Raise your hand", A: "Follow the lesson", M: "Stay in your spot", P: "Listen and answer", S: "Explain your learning" },
+  smallGroup: { C: "Talk with your group", H: "Ask your group first", A: "Work together", M: "Stay with your group", P: "Take turns", S: "Everyone helps" },
+  stations: { C: "Talk with your station", H: "Check the directions", A: "Do the station task", M: "Rotate on the signal", P: "Share materials", S: "Reset the station" },
+  independent: { C: "Work silently", H: "Reread, then ask", A: "Do your own work", M: "Stay in your seat", P: "Keep working", S: "Check your work" },
+  partner: { C: "Talk with your partner", H: "Ask your partner first", A: "Work with your partner", M: "Stay with your partner", P: "Take turns talking", S: "Both can explain" },
+  transitions: { C: "Move quietly", H: "Signal for help", A: "Put supplies away", M: "Walk to your next spot", P: "Move on the signal", S: "Be ready" },
+  assessments: { C: "Work silently", H: "Raise your hand and wait", A: "Do your own work", M: "Stay in your seat", P: "Read carefully", S: "Check and turn in" },
+  teacherTable: { C: "Use a quiet voice", H: "Ask the teacher", A: "Practice with the teacher", M: "Stay at the table", P: "Watch, then take a turn", S: "Show the skill" },
+};
 
 export interface ChampsConfig {
   active: ChampsPresetId;
   presets: Record<ChampsPresetId, ChampsExpectations>;
   icons?: Partial<Record<ChampsPresetId, Partial<ChampsIcons>>>;
-  /** Show the expectation text under each icon in the small (sidebar) view. */
+  captions?: Partial<Record<ChampsPresetId, Partial<ChampsExpectations>>>;
+  /** Show the full details under each card in the small (sidebar) view. */
   showWords?: boolean;
+}
+
+export function captionsFor(config: Partial<ChampsConfig> | undefined, id: ChampsPresetId): ChampsExpectations {
+  return { ...DEFAULT_CAPTIONS[id], ...(config?.captions?.[id] ?? {}) };
 }
 
 export function iconsFor(config: Partial<ChampsConfig> | undefined, id: ChampsPresetId): ChampsIcons {

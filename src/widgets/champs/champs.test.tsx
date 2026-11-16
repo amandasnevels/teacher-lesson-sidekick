@@ -3,7 +3,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { add, resetStore, S } from "@/test-utils";
 import { DEFINITIONS } from "../definitions";
 import Champs from "./Champs";
-import { CHAMPS_PRESETS, DEFAULT_CHAMPS, DEFAULT_ICONS, voiceLevelOf } from "./presets";
+import { CHAMPS_PRESETS, DEFAULT_CAPTIONS, DEFAULT_CHAMPS, DEFAULT_ICONS, artFor, voiceLevelOf } from "./presets";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 beforeEach(() => resetStore());
 
@@ -32,6 +34,22 @@ describe("CHAMPS presets", () => {
   });
 });
 
+describe("CHAMPS card artwork", () => {
+  it("has a picture for every preset card and every C-H-A-M-P-S card", () => {
+    for (const p of CHAMPS_PRESETS)
+      for (const k of ["preset", "C", "H", "A", "M", "P", "S"] as const) {
+        expect(existsSync(path.join(process.cwd(), "public", artFor(p.id, k))), `${p.id} ${k}`).toBe(true);
+      }
+  });
+
+  it("has a short caption for every card and uses the pictures by default", () => {
+    for (const p of CHAMPS_PRESETS) {
+      expect(Object.values(DEFAULT_CAPTIONS[p.id]).every((c) => c.length > 3 && c.length <= 30)).toBe(true);
+      expect(Object.values(DEFAULT_ICONS[p.id]).every((i) => i === "picture")).toBe(true);
+    }
+  });
+});
+
 describe("CHAMPS widget", () => {
   it("has a drop-down with all eight presets; choosing one switches the six picture tiles", () => {
     const id = add("champs");
@@ -42,14 +60,16 @@ describe("CHAMPS widget", () => {
     fireEvent.change(select, { target: { value: "stations" } });
     expect(select).toHaveValue("stations");
     expect(screen.getByTestId("champs-active")).toHaveTextContent("Stations");
-    // Icons, not words: the wording is available to screen readers and as a tooltip only.
+    // Cards: short caption on the card; the full details as tooltip and for screen readers.
     TABLE.Stations.forEach((text, i) => {
       const tile = screen.getByTestId(`champs-row-${"CHAMPS"[i]}`);
       expect(tile).toHaveTextContent(text);
       expect(tile).toHaveAttribute("title", expect.stringContaining(text));
       expect(within(tile).getByText(text)).toHaveClass("sr-only");
     });
-    expect(screen.getByTestId("champs-row-C")).toHaveTextContent("2"); // voice level number on the tile
+    expect(screen.getByTestId("champs-row-H-caption")).toHaveTextContent("Check the directions");
+    expect(screen.getByTestId("champs-active-card")).toHaveTextContent("Stations");
+    expect(screen.getByTestId("champs-row-A").querySelector("img")).toHaveAttribute("src", "/champs/stations-A.webp");
     expect(S().widgets[id].config.active).toBe("stations");
   });
 
@@ -73,9 +93,9 @@ describe("CHAMPS widget", () => {
     const Settings = Champs.Settings!;
     render(<Settings id={id} />);
     expect(screen.getByRole("combobox", { name: "Preset to edit" })).toHaveValue("stations");
-    fireEvent.change(screen.getByRole("textbox", { name: "Stations Help" }), { target: { value: "Ask three, then me." } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Stations Help details" }), { target: { value: "Ask three, then me." } });
     fireEvent.change(screen.getByRole("combobox", { name: "Preset to edit" }), { target: { value: "partner" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Partner Work Success" }), { target: { value: "Both can explain it." } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Partner Work Success details" }), { target: { value: "Both can explain it." } });
     const cfg = S().widgets[id].config as { active: string; presets: Record<string, Record<string, string>> };
     expect(cfg.active).toBe("stations");
     expect(cfg.presets.stations.H).toBe("Ask three, then me.");
@@ -85,6 +105,16 @@ describe("CHAMPS widget", () => {
     fireEvent.click(screen.getByRole("button", { name: /Reset Partner Work/ }));
     expect((S().widgets[id].config as typeof cfg).presets.partner.S).toBe(TABLE["Partner Work"][5]);
     expect((S().widgets[id].config as typeof cfg).presets.stations.H).toBe("Ask three, then me.");
+  });
+
+  it("edits a card caption for one preset only", () => {
+    const id = add("champs");
+    const Settings = Champs.Settings!;
+    render(<Settings id={id} />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Whole Group Help caption" }), { target: { value: "Hand up, then wait" } });
+    const cfg = S().widgets[id].config as { captions: Record<string, Record<string, string>> };
+    expect(cfg.captions.wholeGroup.H).toBe("Hand up, then wait");
+    expect(cfg.captions.stations).toBeUndefined();
   });
 
   it("changes a tile's icon for one preset only", () => {

@@ -9,6 +9,7 @@ import {
   CHAMPS_PRESETS,
   DEFAULT_CHAMPS,
   ICON_CHOICES,
+  captionsFor,
   expectationsFor,
   iconsFor,
   isPresetId,
@@ -17,7 +18,7 @@ import {
   type ChampsKey,
   type ChampsPresetId,
 } from "./presets";
-import { ChampsTile } from "./ChampsTile";
+import { ChampsCard } from "./ChampsTile";
 
 /** Letter badge colors (white text passes contrast on each). */
 const LETTER_COLORS: Record<ChampsKey, string> = { C: "#c2410c", H: "#1d4ed8", A: "#047857", M: "#6d28d9", P: "#be185d", S: "#0f766e" };
@@ -25,25 +26,38 @@ const LETTER_COLORS: Record<ChampsKey, string> = { C: "#c2410c", H: "#1d4ed8", A
 function useChamps(id: string) {
   const [config, set] = useConfig<ChampsConfig>(id);
   const active: ChampsPresetId = isPresetId(config?.active) ? config.active : "wholeGroup";
-  return { config, set, active, expectations: expectationsFor(config, active), icons: iconsFor(config, active) };
+  return { config, set, active, expectations: expectationsFor(config, active), icons: iconsFor(config, active), captions: captionsFor(config, active) };
 }
 
 function Body({ id, view }: WidgetProps) {
-  const { config, set, active, expectations, icons } = useChamps(id);
+  const { config, set, active, expectations, icons, captions } = useChamps(id);
   const expanded = view === "expanded";
+  const cards = (big: boolean) => (
+    <>
+      <ChampsCard preset={active} letter="preset" label={presetName(active)} active big={big} testId="champs-active-card" />
+      {CHAMPS_FIELDS.map((f) => (
+        <ChampsCard
+          key={f.key}
+          preset={active}
+          letter={f.key}
+          label={f.label}
+          caption={captions[f.key]}
+          details={expectations[f.key]}
+          icon={icons[f.key]}
+          big={big}
+          showDetails={big || !!config?.showWords}
+          testId={`champs-row-${f.key}`}
+        />
+      ))}
+    </>
+  );
 
   if (expanded) {
-    // Projection view: the activity and six picture tiles with their wording. No teacher controls.
+    // Projection view: the activity card plus the six expectation cards. No teacher controls.
     return (
-      <div className="rounded-3xl bg-white p-3 text-black sm:p-4" data-testid="champs-expanded">
-        <h3 className="mb-3 text-center text-3xl font-black leading-tight sm:text-4xl" data-testid="champs-active">
-          {presetName(active)}
-        </h3>
-        <ol className="mx-auto grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
-          {CHAMPS_FIELDS.map((f) => (
-            <ChampsTile key={f.key} letter={f.key} label={f.label} icon={icons[f.key]} text={expectations[f.key]} showText big />
-          ))}
-        </ol>
+      <div className="rounded-3xl bg-white p-2 text-black sm:p-3" data-testid="champs-expanded">
+        <h3 className="sr-only" data-testid="champs-active">{presetName(active)}</h3>
+        <ol className="mx-auto grid max-w-[1000px] grid-cols-2 gap-x-3 gap-y-2 lg:grid-cols-4">{cards(true)}</ol>
       </div>
     );
   }
@@ -69,10 +83,8 @@ function Body({ id, view }: WidgetProps) {
       <p className="sr-only" data-testid="champs-active" aria-live="polite">
         {presetName(active)}
       </p>
-      <ol className="grid grid-cols-3 gap-1.5" aria-label={`${presetName(active)} expectations`}>
-        {CHAMPS_FIELDS.map((f) => (
-          <ChampsTile key={f.key} letter={f.key} label={f.label} icon={icons[f.key]} text={expectations[f.key]} showText={!!config?.showWords} />
-        ))}
+      <ol className="grid grid-cols-2 gap-2 [&>li:last-child]:col-span-2 [&>li:last-child]:mx-auto [&>li:last-child]:w-[calc(50%-0.25rem)]" aria-label={`${presetName(active)} expectations`}>
+        {cards(false)}
       </ol>
     </div>
   );
@@ -89,6 +101,9 @@ function Settings({ id }: { id: string }) {
   const [editing, setEditing] = useState<ChampsPresetId>(active);
   const values = expectationsFor(config, editing);
   const icons = iconsFor(config, editing);
+  const captions = captionsFor(config, editing);
+  const setCaption = (key: ChampsKey, text: string) =>
+    set({ captions: { ...(config?.captions ?? {}), [editing]: { ...(config?.captions?.[editing] ?? {}), [key]: text } } });
   const setIcon = (key: ChampsKey, icon: string) =>
     set({ icons: { ...(config?.icons ?? {}), [editing]: { ...(config?.icons?.[editing] ?? {}), [key]: icon } } });
   const update = (key: ChampsKey, text: string) =>
@@ -106,7 +121,7 @@ function Settings({ id }: { id: string }) {
           ))}
         </select>
       </Field>
-      <Toggle checked={!!config?.showWords} onChange={(showWords) => set({ showWords })} label="Show words under icons" description="In the small view. Expand always shows the words." />
+      <Toggle checked={!!config?.showWords} onChange={(showWords) => set({ showWords })} label="Show details under the cards" description="In the small view. Expand always shows them." />
       {CHAMPS_FIELDS.map((f) => (
         <Field key={f.key} label={`${f.key} · ${f.label}`}>
           <select
@@ -117,15 +132,24 @@ function Settings({ id }: { id: string }) {
           >
             {ICON_CHOICES.map((ic) => (
               <option key={ic} value={ic}>
-                {ic === "level" ? "Voice level number (from the text)" : ic}
+                {ic === "picture" ? "Card picture" : ic === "level" ? "Voice level number (from the details)" : ic}
               </option>
             ))}
           </select>
+          <input
+            className={cx(inputCls, "mb-1 min-h-10")}
+            value={captions[f.key]}
+            maxLength={40}
+            placeholder="Card caption"
+            aria-label={`${presetName(editing)} ${f.label} caption`}
+            onChange={(e) => setCaption(f.key, e.target.value)}
+          />
           <textarea
+            placeholder="Details"
             className={cx(inputCls, "min-h-16 py-2")}
             value={values[f.key]}
             maxLength={160}
-            aria-label={`${presetName(editing)} ${f.label}`}
+            aria-label={`${presetName(editing)} ${f.label} details`}
             onChange={(e) => update(f.key, e.target.value)}
           />
         </Field>
@@ -135,10 +159,11 @@ function Settings({ id }: { id: string }) {
         size="sm"
         onClick={() => {
           const { [editing]: _drop, ...otherIcons } = config?.icons ?? {};
-          set({ presets: { ...DEFAULT_CHAMPS, ...(config?.presets ?? {}), [editing]: { ...DEFAULT_CHAMPS[editing] } }, icons: otherIcons });
+          const { [editing]: _drop2, ...otherCaptions } = config?.captions ?? {};
+          set({ presets: { ...DEFAULT_CHAMPS, ...(config?.presets ?? {}), [editing]: { ...DEFAULT_CHAMPS[editing] } }, icons: otherIcons, captions: otherCaptions });
         }}
       >
-        <RotateCcw size={14} /> Reset {presetName(editing)} to starter wording and icons
+        <RotateCcw size={14} /> Reset {presetName(editing)} to starter cards
       </Button>
     </div>
   );

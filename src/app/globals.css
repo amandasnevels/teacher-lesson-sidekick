@@ -109,3 +109,8 @@ body {
   .h-screen-safe { height: 100dvh; }
   .modal-panel { max-height: 85dvh; }
 }
+
+/* CHAMPS: glowing outline on the active activity card */
+.champs-glow {
+  box-shadow: 0 0 0 3px #ffd84d, 0 0 14px 4px rgba(255, 196, 0, 0.75);
+}
