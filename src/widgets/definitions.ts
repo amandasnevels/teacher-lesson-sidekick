@@ -354,7 +354,7 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     defaultColor: "sky",
     defaultSize: "M",
     usesRoster: false,
-    defaultConfig: () => ({ heading: "Today I can…", items: [], fontSize: "lg", showCodes: true, grade: "3", subject: "ela" }),
+    defaultConfig: () => ({ heading: "Today I can…", items: [], fontSize: "md", showCodes: true, grade: "3", subject: "ela" }),
   },
   iwill: {
     type: "iwill",
@@ -366,7 +366,7 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     defaultColor: "teal",
     defaultSize: "M",
     usesRoster: false,
-    defaultConfig: () => ({ heading: "Today I will…", items: [], fontSize: "lg", showCodes: true, grade: "3", subject: "ela", elpsDomain: "all" }),
+    defaultConfig: () => ({ heading: "Today I will…", items: [], fontSize: "md", showCodes: true, grade: "3", subject: "ela", elpsDomain: "all" }),
   },
   quiz: {
     type: "quiz",

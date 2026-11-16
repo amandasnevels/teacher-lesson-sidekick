@@ -27,7 +27,8 @@ export interface ICanItem {
 export interface ICanConfig {
   heading: string;
   items: ICanItem[];
-  fontSize: "md" | "lg" | "xl";
+  /** "xl" is a legacy value from earlier versions; it displays as large. */
+  fontSize: "sm" | "md" | "lg" | "xl";
   showCodes: boolean;
   grade: string;
   subject: TeksSubject;
@@ -50,7 +51,18 @@ function useKind(id: string): Kind {
   return useSidekick((s) => (s.widgets[id]?.type === "iwill" ? "iwill" : "ican"));
 }
 
-const sizes = { md: "text-base", lg: "text-xl", xl: "text-3xl" };
+type TextSize = "sm" | "md" | "lg";
+export const textSizeOf = (v: string | undefined): TextSize => (v === "sm" || v === "md" ? v : "lg");
+const sizes: Record<TextSize, { text: string; stem: string }> = {
+  sm: { text: "text-sm", stem: "text-xs" },
+  md: { text: "text-base", stem: "text-sm" },
+  lg: { text: "text-xl", stem: "text-base" },
+};
+const SIZE_OPTIONS: { value: TextSize; label: string }[] = [
+  { value: "sm", label: "Small" },
+  { value: "md", label: "Medium" },
+  { value: "lg", label: "Large" },
+];
 
 /** Adds "I can" / "I will" to typed objectives that don't already start with a stem. */
 export function normalizeObjective(raw: string, prefix = "I can"): string {
@@ -85,7 +97,27 @@ function Body({ id, view }: WidgetProps) {
     <div className="space-y-3">
       {confirmEl}
       {promptEl}
-      <p className={cx("font-black uppercase tracking-wide text-ink-soft", big ? "text-2xl" : "text-xs")}>{c.heading || K.heading}</p>
+      <div className="flex items-center gap-2">
+        <p className={cx("min-w-0 flex-1 truncate font-black uppercase tracking-wide text-ink-soft", big ? "text-2xl" : "text-xs")}>{c.heading || K.heading}</p>
+        {!big && (
+          <div className="flex shrink-0 rounded-lg bg-black/5 p-0.5 dark:bg-white/10" role="radiogroup" aria-label="Text size">
+            {SIZE_OPTIONS.map((o, i) => (
+              <button
+                key={o.value}
+                type="button"
+                role="radio"
+                aria-checked={textSizeOf(c.fontSize) === o.value}
+                aria-label={`${o.label} text`}
+                title={`${o.label} text`}
+                onClick={() => set({ fontSize: o.value })}
+                className={cx("flex h-8 w-8 items-center justify-center rounded-md font-black transition", textSizeOf(c.fontSize) === o.value ? "bg-card text-ink shadow-sm" : "text-ink-soft hover:text-ink")}
+              >
+                <span className={["text-[11px]", "text-sm", "text-base"][i]}>A</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       {items.length === 0 ? (
         <EmptyState emoji={kind === "iwill" ? "🗣️" : "💡"} title={K.emptyTitle}>
           <p className="text-sm text-ink-soft">{K.emptyText}</p>
@@ -97,9 +129,9 @@ function Body({ id, view }: WidgetProps) {
             return (
               <li key={it.id} className="group flex items-start gap-2 rounded-2xl bg-soft px-3 py-2">
                 <div className="min-w-0 flex-1">
-                  <p className={cx("font-bold leading-snug", big ? "text-4xl" : sizes[c.fontSize] ?? sizes.lg)}>{it.text}</p>
+                  <p className={cx("font-bold leading-snug", big ? "text-4xl" : sizes[textSizeOf(c.fontSize)].text)} data-testid="ican-text">{it.text}</p>
                   {it.stem && (
-                    <p className={cx("mt-1 rounded-xl bg-card/70 px-2 py-1 font-semibold italic", big ? "text-3xl" : "text-sm")} data-testid="iwill-stem">
+                    <p className={cx("mt-1 rounded-xl bg-card/70 px-2 py-1 font-semibold italic", big ? "text-3xl" : sizes[textSizeOf(c.fontSize)].stem)} data-testid="iwill-stem">
                       💬 {it.stem}
                     </p>
                   )}
@@ -112,7 +144,7 @@ function Body({ id, view }: WidgetProps) {
                   )}
                   {c.showCodes && it.code && <p className="mt-0.5 text-xs font-black text-ink-soft">{K.codeLabel(it)}</p>}
                 </div>
-                <div className="flex shrink-0 flex-col gap-1">
+                <div className={cx("flex shrink-0 gap-1", big || textSizeOf(c.fontSize) === "lg" ? "flex-col" : "flex-row items-start")}>
                   <IconButton
                     size="md"
                     variant={done ? "accent" : "outline"}
@@ -643,7 +675,7 @@ function Settings({ id }: { id: string }) {
         <input className={inputCls} value={c.heading} maxLength={40} onChange={(e) => set({ heading: e.target.value })} />
       </Field>
       <Field label="Text size">
-        <Segmented label="Text size" value={c.fontSize} onChange={(fontSize) => set({ fontSize })} options={[{ value: "md", label: "Medium" }, { value: "lg", label: "Large" }, { value: "xl", label: "Extra large" }]} />
+        <Segmented label="Text size" value={textSizeOf(c.fontSize)} onChange={(fontSize) => set({ fontSize })} options={SIZE_OPTIONS} />
       </Field>
       <Toggle checked={c.showCodes} onChange={(showCodes) => set({ showCodes })} label="Show TEKS / ELPS codes under statements" />
     </div>

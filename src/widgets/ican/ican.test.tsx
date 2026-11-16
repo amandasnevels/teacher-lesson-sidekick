@@ -104,3 +104,26 @@ describe("search word families", () => {
     expect(searchTeks(d.items, { subject: "math", grade: "4", query: "comparing fractions" }).length).toBeGreaterThan(0);
   });
 });
+
+describe("text size", () => {
+  it("switches between small, medium and large from the widget, defaulting to medium", () => {
+    const id = add("ican");
+    S().updateConfig(id, { items: [{ id: "a", text: "I can read." }] });
+    render(<ICan.Body id={id} view="normal" size="M" />);
+    expect(screen.getByRole("radio", { name: "Medium text" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByTestId("ican-text")).toHaveClass("text-base");
+    fireEvent.click(screen.getByRole("radio", { name: "Small text" }));
+    expect(S().widgets[id].config.fontSize).toBe("sm");
+    expect(screen.getByTestId("ican-text")).toHaveClass("text-sm");
+    fireEvent.click(screen.getByRole("radio", { name: "Large text" }));
+    expect(screen.getByTestId("ican-text")).toHaveClass("text-xl");
+  });
+
+  it("older widgets saved as extra large show as large", () => {
+    const id = add("iwill", { fontSize: "xl" });
+    S().updateConfig(id, { items: [{ id: "a", text: "I will speak.", stem: "I think ___." }] });
+    render(<ICan.Body id={id} view="normal" size="M" />);
+    expect(screen.getByRole("radio", { name: "Large text" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByTestId("iwill-stem")).toHaveClass("text-base");
+  });
+});
