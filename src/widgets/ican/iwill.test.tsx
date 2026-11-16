@@ -76,3 +76,40 @@ describe("I Will widget", () => {
     expect(screen.getByTestId("ican-list")).toHaveTextContent("I will retell the story to a partner");
   });
 });
+
+describe("proficiency levels", () => {
+  it("has official descriptors for every domain, band and level", async () => {
+    const { findPld, LEVELS } = await import("@/lib/elps");
+    const d = await loadElps();
+    expect(d.plds).toHaveLength(24);
+    for (const dom of ["listening", "speaking", "reading", "writing"])
+      for (const band of ["K-1", "2-12"] as const)
+        for (const l of LEVELS) {
+          const p = findPld(d.plds, dom, l.value, band)!;
+          expect(p, `${dom} ${band} ${l.value}`).toBeTruthy();
+          expect(p.bullets.length).toBeGreaterThan(1);
+        }
+    expect(findPld(d.plds, "reading", "beginning", "K-1")!.summary).toMatch(/foundational reading skills/);
+    expect(findPld(d.plds, "reading", "beginning", "2-12")!.summary).toMatch(/read and understand English/);
+    expect(findPld(d.plds, "speaking", "beginning", "2-12")!.bullets[0]).toMatch(/^mainly speak using single words and short phrases/);
+  });
+
+  it("tags a goal with levels, shows the descriptor and supports, and applies a stem", async () => {
+    const id = add("iwill");
+    S().updateConfig(id, { items: [{ id: "g1", text: "I will share information in cooperative learning interactions.", code: "ELPS 3E", domain: "Speaking" }] });
+    render(<IWillWidget.Body id={id} view="normal" size="M" />);
+    fireEvent.click(screen.getByRole("button", { name: /Proficiency levels and supports/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Proficiency levels & supports" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Beginning" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Advanced" }));
+    const beginning = await within(dialog).findByTestId("level-beginning");
+    await waitFor(() => expect(beginning).toHaveTextContent("little or no ability to speak English"));
+    expect(beginning).toHaveTextContent("Picture word bank");
+    expect(within(dialog).getByTestId("level-advanced")).toHaveTextContent("grade-appropriate English");
+    fireEvent.click(within(beginning).getByRole("button", { name: /This is ___\./ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+    expect(S().widgets[id].config.items).toMatchObject([{ levels: ["beginning", "advanced"], stem: "This is ___." }]);
+    expect(screen.getByTestId("iwill-levels")).toHaveTextContent("BeginningAdvanced");
+    expect(screen.getByTestId("iwill-stem")).toHaveTextContent("This is ___.");
+  });
+});

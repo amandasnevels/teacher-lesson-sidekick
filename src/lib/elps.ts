@@ -17,6 +17,7 @@ export interface ElpsData {
   source: string;
   retrieved: string;
   items: ElpsItem[];
+  plds: Pld[];
 }
 
 export const ELPS_DOMAINS: { value: ElpsDomain | "all"; label: string; emoji: string }[] = [
@@ -53,3 +54,73 @@ export function searchElps(items: ElpsItem[], domain: ElpsDomain | "all", query:
   const res = queryRegexes(raw);
   return pool.filter((i) => res.every((r) => r.test(`${i.code} ${i.domainLabel} ${i.text}`)));
 }
+
+/* ------------------------------------------------------------------ Proficiency levels */
+
+export type ProficiencyLevel = "beginning" | "intermediate" | "advanced" | "advancedHigh";
+
+export const LEVELS: { value: ProficiencyLevel; label: string; short: string; color: string }[] = [
+  { value: "beginning", label: "Beginning", short: "B", color: "#e5484d" },
+  { value: "intermediate", label: "Intermediate", short: "I", color: "#f76b15" },
+  { value: "advanced", label: "Advanced", short: "A", color: "#0c8ce9" },
+  { value: "advancedHigh", label: "Advanced High", short: "AH", color: "#2bb673" },
+];
+
+/** Official proficiency level descriptor (19 TAC §74.4(d)). */
+export interface Pld {
+  domain: "listening" | "speaking" | "reading" | "writing";
+  band: "K-12" | "K-1" | "2-12";
+  level: ProficiencyLevel;
+  summary: string;
+  bullets: string[];
+  cite: string;
+}
+
+export type PldBand = "K-1" | "2-12";
+
+/** Descriptor for a domain/level; reading and writing differ for K–1 vs 2–12. */
+export function findPld(plds: Pld[], domain: string, level: ProficiencyLevel, band: PldBand): Pld | null {
+  return plds.find((p) => p.domain === domain && p.level === level && (p.band === "K-12" || p.band === band)) ?? null;
+}
+
+/**
+ * Suggested linguistic supports by level. These are Sidekick's practical suggestions,
+ * not TEA text; they follow the general pattern of more support at beginning, less at advanced high.
+ */
+export const LEVEL_SUPPORTS: Record<ProficiencyLevel, string[]> = {
+  beginning: [
+    "Visuals, real objects, gestures and modeling",
+    "Picture word bank for key vocabulary",
+    "Let students point, draw, label or use single words and short phrases",
+    "Fill-in sentence frames with a word bank",
+    "Home-language support: cognates, bilingual glossary, a peer buddy",
+  ],
+  intermediate: [
+    "Sentence stems for each turn of talk",
+    "Pre-teach key vocabulary with visuals",
+    "Graphic organizers to plan before speaking or writing",
+    "Repeat and paraphrase directions; check for understanding",
+    "Structured partner talk with roles",
+  ],
+  advanced: [
+    "Academic language starters (because, however, therefore)",
+    "Model texts or exemplar answers",
+    "Word wall with content-specific vocabulary",
+    "Wait time and prompts to elaborate (“Tell me more…”)",
+    "Peer feedback with a simple checklist",
+  ],
+  advancedHigh: [
+    "Focus on precise academic vocabulary and nuance",
+    "Idioms, figurative language and multiple-meaning words",
+    "Extended discussions and writing with a self-check rubric",
+    "Opportunities to explain, justify and lead discussions",
+  ],
+};
+
+/** Sentence-stem ideas that match each level's language demands. */
+export const LEVEL_STEMS: Record<ProficiencyLevel, string[]> = {
+  beginning: ["This is ___.", "I see ___.", "It is ___."],
+  intermediate: ["I think ___ because ___.", "First ___, then ___."],
+  advanced: ["Based on ___, I can infer that ___.", "I agree with ___ because ___, but ___."],
+  advancedHigh: ["Although ___, the evidence suggests ___.", "One could argue that ___; however, ___."],
+};

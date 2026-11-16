@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { BookCheck, CalendarCheck, Check, Download, MessageSquareQuote, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { BookCheck, CalendarCheck, Check, Download, Gauge, MessageSquareQuote, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useSidekick } from "@/store/store";
 import { useActiveClass, useConfig } from "@/store/hooks";
 import { uid } from "@/lib/ids";
 import { TEKS_GRADES, TEKS_SUBJECTS, loadTeks, localDateKey, searchTeks, wordPattern, type TeksData, type TeksItem, type TeksSubject } from "@/lib/teks";
 import type { TaughtEntry } from "@/lib/types";
-import { ELPS_DOMAINS, STEM_IDEAS, loadElps, searchElps, type ElpsData, type ElpsDomain, type ElpsItem } from "@/lib/elps";
+import { ELPS_DOMAINS, LEVELS, LEVEL_STEMS, LEVEL_SUPPORTS, STEM_IDEAS, findPld, loadElps, searchElps, type ElpsData, type ElpsDomain, type ElpsItem, type PldBand, type ProficiencyLevel } from "@/lib/elps";
 import { accentStyle } from "@/components/WidgetFrame";
 import { Button, EmptyState, Field, IconButton, Modal, Segmented, Toggle, cx, inputCls, useConfirm, usePrompt } from "@/components/ui";
 import type { WidgetModule, WidgetProps } from "../types";
@@ -21,6 +21,8 @@ export interface ICanItem {
   /** "I will" goals: language domain label and an optional sentence stem. */
   domain?: string | null;
   stem?: string | null;
+  /** Proficiency levels this goal is planned for (I Will). */
+  levels?: ProficiencyLevel[];
 }
 export interface ICanConfig {
   heading: string;
@@ -31,7 +33,12 @@ export interface ICanConfig {
   subject: TeksSubject;
   /** I Will widget: last ELPS domain searched. */
   elpsDomain?: ElpsDomain | "all";
+  /** Which reading/writing descriptors to show: K–1 or 2–12. */
+  pldBand?: PldBand;
 }
+
+const DOMAIN_KEY: Record<string, ElpsDomain> = { Listening: "listening", Speaking: "speaking", Reading: "reading", Writing: "writing", "Learning Strategies": "strategies" };
+const levelOrder = (ls: ProficiencyLevel[] = []) => LEVELS.filter((l) => ls.includes(l.value));
 
 type Kind = "ican" | "iwill";
 const KIND = {
@@ -67,6 +74,7 @@ function Body({ id, view }: WidgetProps) {
   const today = localDateKey();
   const taughtToday = useSidekick((s) => s.taught);
   const [dialog, setDialog] = useState<null | "search" | "type" | "tracker">(null);
+  const [levelFor, setLevelFor] = useState<string | null>(null);
   const [confirmEl, ask] = useConfirm();
   const items = c.items ?? [];
   const big = view === "expanded";
@@ -95,6 +103,13 @@ function Body({ id, view }: WidgetProps) {
                       💬 {it.stem}
                     </p>
                   )}
+                  {kind === "iwill" && (it.levels?.length ?? 0) > 0 && (
+                    <button type="button" onClick={() => setLevelFor(it.id)} className="mt-1 flex flex-wrap gap-1" aria-label={`Proficiency levels: ${levelOrder(it.levels).map((l) => l.label).join(", ")}. Show supports`} data-testid="iwill-levels">
+                      {levelOrder(it.levels).map((l) => (
+                        <span key={l.value} className="rounded-full px-2 py-0.5 text-[11px] font-black text-white" style={{ background: l.color }}>{l.label}</span>
+                      ))}
+                    </button>
+                  )}
                   {c.showCodes && it.code && <p className="mt-0.5 text-xs font-black text-ink-soft">{K.codeLabel(it)}</p>}
                 </div>
                 <div className="flex shrink-0 flex-col gap-1">
@@ -116,12 +131,18 @@ function Body({ id, view }: WidgetProps) {
                       size="md"
                       label={it.stem ? `Edit sentence stem: ${it.text}` : `Add sentence stem: ${it.text}`}
                       onClick={async () => {
-                        const idea = STEM_IDEAS[(Object.entries({ Listening: "listening", Speaking: "speaking", Reading: "reading", Writing: "writing", "Learning Strategies": "strategies" }).find(([k]) => k === it.domain)?.[1] ?? "speaking") as ElpsDomain][0];
+                        const lv = levelOrder(it.levels)[0]?.value;
+                        const idea = lv ? LEVEL_STEMS[lv][0] : STEM_IDEAS[DOMAIN_KEY[it.domain ?? ""] ?? "speaking"][0];
                         const v = await prompt("Sentence stem", `Students can use this frame (e.g. “${idea}”). Leave blank to remove.`, it.stem ?? idea, "Save stem");
                         if (v !== null) set({ items: items.map((x) => (x.id === it.id ? { ...x, stem: v.trim() || null } : x)) });
                       }}
                     >
                       <MessageSquareQuote size={16} />
+                    </IconButton>
+                  )}
+                  {kind === "iwill" && (
+                    <IconButton size="md" label={`Proficiency levels and supports: ${it.text}`} onClick={() => setLevelFor(it.id)}>
+                      <Gauge size={16} />
                     </IconButton>
                   )}
                   <IconButton size="md" label={`Remove from widget: ${it.text}`} onClick={() => set({ items: items.filter((x) => x.id !== it.id) })}>
@@ -152,6 +173,7 @@ function Body({ id, view }: WidgetProps) {
       {dialog === "type" && <TypeDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} />}
       {dialog === "search" && (kind === "iwill" ? <ElpsSearchDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} /> : <SearchDialog id={id} style={accentStyle(color)} onClose={() => setDialog(null)} />)}
       {dialog === "tracker" && <TrackerDialog style={accentStyle(color)} onClose={() => setDialog(null)} />}
+      {levelFor && items.some((x) => x.id === levelFor) && <LevelDialog id={id} itemId={levelFor} style={accentStyle(color)} onClose={() => setLevelFor(null)} />}
     </div>
   );
 }
@@ -311,6 +333,83 @@ function SearchDialog({ id, style, onClose }: { id: string; style: React.CSSProp
             <p className="text-[11px] text-ink-soft">Source: {data.source}. Retrieved {data.retrieved}. “I can” wording is generated from each student expectation.</p>
           </>
         )}
+      </div>
+    </Modal>
+  );
+}
+
+/** Tag a goal with proficiency levels and see official descriptors + suggested supports. */
+function LevelDialog({ id, itemId, style, onClose }: { id: string; itemId: string; style: React.CSSProperties; onClose: () => void }) {
+  const [c, set] = useConfig<ICanConfig>(id);
+  const [data, setData] = useState<ElpsData | null>(null);
+  useEffect(() => { loadElps().then(setData).catch(() => {}); }, []);
+  const items = c.items ?? [];
+  const it = items.find((x) => x.id === itemId)!;
+  const levels = it.levels ?? [];
+  const band: PldBand = c.pldBand ?? "2-12";
+  const domain = DOMAIN_KEY[it.domain ?? ""] ?? null;
+  const update = (patch: Partial<ICanItem>) => set({ items: items.map((x) => (x.id === itemId ? { ...x, ...patch } : x)) });
+  const toggle = (l: ProficiencyLevel) => update({ levels: levels.includes(l) ? levels.filter((x) => x !== l) : [...levels, l] });
+
+  return (
+    <Modal open onClose={onClose} wide title="Proficiency levels & supports" panelStyle={style} footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
+      <div className="space-y-4">
+        <p className="rounded-xl bg-soft px-3 py-2 text-sm font-bold">{it.text}</p>
+        <div>
+          <p className="mb-1 text-xs font-black uppercase text-ink-soft">Plan this goal for</p>
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Proficiency levels">
+            {LEVELS.map((l) => {
+              const on = levels.includes(l.value);
+              return (
+                <button key={l.value} type="button" aria-pressed={on} onClick={() => toggle(l.value)} className={cx("min-h-10 rounded-full border-2 px-3 text-sm font-black transition", on ? "text-white" : "bg-card")} style={on ? { background: l.color, borderColor: l.color } : { borderColor: l.color, color: l.color }}>
+                  {on ? "✓ " : ""}{l.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        {(domain === "reading" || domain === "writing") && (
+          <Field label="Grade band for reading & writing descriptors">
+            <Segmented label="Grade band" value={band} onChange={(pldBand) => set({ pldBand })} options={[{ value: "K-1", label: "K–1" }, { value: "2-12", label: "Grades 2–12" }]} />
+          </Field>
+        )}
+        {levels.length === 0 && <p className="text-sm text-ink-soft">Choose one or more levels to see what students at that level can do and supports that help.</p>}
+        {levelOrder(levels).map((l) => {
+          const pld = data && domain && domain !== "strategies" ? findPld(data.plds, domain, l.value, band) : null;
+          return (
+            <section key={l.value} className="space-y-2 rounded-2xl border-2 p-3" style={{ borderColor: l.color }} data-testid={`level-${l.value}`}>
+              <h3 className="font-black" style={{ color: l.color }}>{l.label}{it.domain ? ` · ${it.domain}` : ""}</h3>
+              {pld ? (
+                <div className="text-sm">
+                  <p className="font-semibold">{pld.summary} These students:</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                    {pld.bullets.map((b, i) => <li key={i}>{b}</li>)}
+                  </ul>
+                  <p className="mt-1 text-[11px] text-ink-soft">Official descriptor · {pld.cite}</p>
+                </div>
+              ) : domain === "strategies" ? (
+                <p className="text-sm text-ink-soft">The ELPS define proficiency descriptors for listening, speaking, reading and writing; learning strategies apply across all four.</p>
+              ) : !data ? (
+                <p className="animate-pulse text-sm text-ink-soft">Loading descriptors…</p>
+              ) : null}
+              <div className="rounded-xl bg-soft p-2 text-sm">
+                <p className="text-xs font-black uppercase text-ink-soft">Suggested supports</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                  {LEVEL_SUPPORTS[l.value].map((s) => <li key={s}>{s}</li>)}
+                </ul>
+                <p className="mt-2 text-xs font-black uppercase text-ink-soft">Stem ideas</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {LEVEL_STEMS[l.value].map((s) => (
+                    <button key={s} type="button" onClick={() => update({ stem: s })} aria-pressed={it.stem === s} className={cx("rounded-lg px-2 py-1 text-xs font-bold", it.stem === s ? "bg-accent text-on-accent" : "bg-card")} title="Use as this goal's sentence stem">
+                      💬 {s}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[11px] text-ink-soft">Supports and stems are Sidekick suggestions, not TEA text.</p>
+              </div>
+            </section>
+          );
+        })}
       </div>
     </Modal>
   );

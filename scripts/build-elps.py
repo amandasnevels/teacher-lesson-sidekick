@@ -51,7 +51,28 @@ def main():
                 "cite": f"19 TAC §74.4(c)({n})({letter})",
             })
         print(f"{label:20} {sum(1 for i in items if i['domain'] == key):3} SEs", file=sys.stderr)
+    # (d) Proficiency level descriptors: domain x grade band x level, with "these students ..." bullets.
+    d = next(x for x in p.root.children if teks.clean(x.text).lower().startswith("proficiency level descriptors"))
+    plds = []
+    level_keys = {"A": "beginning", "B": "intermediate", "C": "advanced", "D": "advancedHigh"}
+    for dom in d.children:
+        head = teks.clean(dom.text)
+        m = re.match(r"(Listening|Speaking|Reading|Writing), (Kindergarten-Grade 12|Kindergarten-Grade 1|Grades 2-12)\.", head)
+        if not m:
+            continue
+        band = {"Kindergarten-Grade 12": "K-12", "Kindergarten-Grade 1": "K-1", "Grades 2-12": "2-12"}[m.group(2)]
+        for lv in dom.children:
+            key = level_keys.get(lv.designator.strip("()"))
+            if not key:
+                continue
+            text = teks.clean(lv.text)
+            summary = re.split(r"\s+These students:?$", text)[0].strip()
+            summary = re.sub(r"^(Beginning|Intermediate|Advanced high|Advanced)\.\s*", "", summary)
+            bullets = [teks.tidy_se(b.text) for b in lv.children if b.designator]
+            plds.append({"domain": m.group(1).lower(), "band": band, "level": key, "summary": summary, "bullets": bullets, "cite": f"19 TAC §74.4(d){dom.designator}{lv.designator}"})
+    print(f"Proficiency level descriptors: {len(plds)}", file=sys.stderr)
     data = {
+        "plds": plds,
         "source": "19 Texas Administrative Code §74.4 (English Language Proficiency Standards), via law.cornell.edu",
         "retrieved": time.strftime("%Y-%m-%d"),
         "items": items,

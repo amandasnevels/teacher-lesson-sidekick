@@ -37,7 +37,9 @@
   `scripts/build-elps.py`; “I will” wording generated from each SE 🧪
 - ✅ Optional sentence stem per goal (with domain-specific suggestions), shown under the goal 🧪
 - ✅ Shares the taught tracker with I Can (“TEKS & ELPS taught tracker”), incl. ELPS coverage “N of 45” 🧪
-- 🔜 Proficiency-level supports (beginning → advanced high, from §74.4(d)) could be added next
+- ✅ Proficiency levels: tag a goal Beginning / Intermediate / Advanced / Advanced High (multiple allowed);
+  pop-up shows the official descriptor for the goal's domain and level (24 PLDs from §74.4(d), K–1 vs 2–12
+  for reading & writing), plus suggested supports and level-matched stems (labeled as Sidekick suggestions) 🧪
 
 ## Hall Pass
 - ✅ Widget face: count of students out (optionally names, places and time out; overdue turns red); Check out /
