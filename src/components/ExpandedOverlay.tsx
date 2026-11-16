@@ -15,7 +15,7 @@ export function ExpandedOverlay() {
   const def = DEFINITIONS[w.type];
   const Mod = WIDGET_MODULES[w.type];
   return (
-    <Modal open onClose={close} wide title={<span className="flex items-center gap-2">{def.emoji} {w.title || def.name}<span className="sr-only"> (expanded)</span></span>}>
+    <Modal open onClose={close} wide="xl" title={<span className="flex items-center gap-2">{def.emoji} {w.title || def.name}<span className="sr-only"> (expanded)</span></span>}>
       <div className="widget-card widget-body pb-2" style={accentStyle(w.color)}>
         <Mod.Body id={id} view="expanded" size="L" />
       </div>

@@ -188,7 +188,8 @@ export function Modal({
   title: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
-  wide?: boolean;
+  /** true = wide; "xl" = extra wide (expanded widget / projection view). */
+  wide?: boolean | "xl";
   labelledBy?: string;
   /** e.g. a widget's accent colors, since pop-ups render outside the widget. */
   panelStyle?: React.CSSProperties;
@@ -247,7 +248,7 @@ export function Modal({
         style={panelStyle}
         className={cx(
           "modal-panel pop-in mx-auto mt-auto flex w-full flex-col overflow-hidden rounded-t-3xl bg-card text-ink shadow-2xl sm:my-auto sm:rounded-3xl",
-          wide ? "sm:max-w-2xl" : "sm:max-w-lg",
+          wide === "xl" ? "sm:max-w-5xl" : wide ? "sm:max-w-2xl" : "sm:max-w-lg",
         )}
       >
         <div className="flex items-center gap-2 border-b border-line px-4 py-3">

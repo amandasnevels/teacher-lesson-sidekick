@@ -5,6 +5,7 @@
 import type { WidgetSize, WidgetType } from "@/lib/types";
 import type { WidgetColorKey } from "@/lib/colors";
 import { uid } from "@/lib/ids";
+import { defaultChampsConfig } from "./champs/presets";
 
 export type WidgetCategory = "Essentials" | "Students" | "Randomizers" | "Learning" | "Management" | "Rewards" | "Schedule";
 
@@ -368,6 +369,18 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     usesRoster: false,
     defaultConfig: () => ({ heading: "Today I will…", items: [], fontSize: "md", showCodes: true, grade: "3", subject: "ela", elpsDomain: "all" }),
   },
+  champs: {
+    type: "champs",
+    name: "CHAMPS",
+    emoji: "📣",
+    description: "Classroom expectations: Conversation, Help, Activity, Movement, Participation, Success.",
+    category: "Management",
+    keywords: ["champs", "expectations", "behavior", "conversation", "help", "movement", "participation", "routines", "voice level"],
+    defaultColor: "orange",
+    defaultSize: "M",
+    usesRoster: false,
+    defaultConfig: () => ({ ...defaultChampsConfig() }),
+  },
   quiz: {
     type: "quiz",
     name: "Quick Fact Game",
@@ -407,7 +420,7 @@ export interface WidgetPack {
 }
 
 export const PACKS: WidgetPack[] = [
-  { id: "management", name: "Classroom Management", emoji: "🧭", description: "Voice levels, sounds, status and visual cues.", types: ["voice", "soundboard", "status", "cues"] },
+  { id: "management", name: "Classroom Management", emoji: "🧭", description: "Voice levels, sounds, status, visual cues and CHAMPS.", types: ["voice", "soundboard", "status", "cues", "champs"] },
   { id: "activities", name: "Interactive Activities", emoji: "🎲", description: "Dice, spinner, choices, coin, groups and a turn queue.", types: ["dice", "spinner", "choice", "coin", "groups", "queue"] },
   { id: "learning", name: "Learning Games", emoji: "🧠", description: "Quick Fact Game and Fast Facts math flash cards.", types: ["quiz", "fastfacts"] },
   { id: "rewards", name: "Rewards", emoji: "🏆", description: "Reward tracker and tally counter.", types: ["reward", "tally"] },

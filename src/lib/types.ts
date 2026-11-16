@@ -41,7 +41,8 @@ export type WidgetType =
   | "fastfacts"
   | "hallpass"
   | "ican"
-  | "iwill";
+  | "iwill"
+  | "champs";
 
 export type WidgetSize = "S" | "M" | "L";
 
