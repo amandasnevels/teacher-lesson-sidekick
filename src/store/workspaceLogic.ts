@@ -9,13 +9,13 @@
  *
  * Everything here is a pure function of the persisted state, so it is easy to test.
  */
-import type { DockItem, PersistedState, WidgetInstance, WidgetType, Workspace } from "@/lib/types";
+import type { DockItem, LayoutPos, PersistedState, WidgetInstance, WidgetSize, WidgetType, Workspace } from "@/lib/types";
 import { clone } from "@/lib/clone";
 import { uid } from "@/lib/ids";
 import { pause, type TimerSession } from "@/widgets/timer/timerLogic";
 import { createDefaultState, makeInstance } from "./defaults";
 
-import { WORKSPACE_PRESETS, type PresetKind, type WorkspacePreset } from "./presets";
+import { PRESET_LAYOUT_COLS, WORKSPACE_PRESETS, type PresetKind, type WorkspacePreset } from "./presets";
 
 /** The built-in presets double as the "+ New workspace" templates. */
 export const WORKSPACE_TEMPLATES: WorkspacePreset[] = WORKSPACE_PRESETS;
@@ -161,14 +161,24 @@ export function createWorkspace(s: PersistedState, choice: NewWorkspaceChoice): 
     const t = WORKSPACE_TEMPLATES.find((x) => x.kind === choice.kind)!;
     ws = { ...ws, kind: t.kind };
     widgets = { ...s.widgets };
+    const placed: LayoutPos[] = [];
     for (const seed of t.widgets) {
+      const size: WidgetSize | undefined = seed.size ?? (seed.w ? (seed.w >= 3 ? "L" : seed.w === 2 ? "M" : "S") : undefined);
       const inst = makeInstance(seed.type, id, {
         ...(seed.config ? { config: seed.config } : {}),
         ...(seed.title ? { title: seed.title } : {}),
-        ...(seed.size ? { size: seed.size } : {}),
+        ...(size ? { size } : {}),
+        ...(seed.w ? { w: seed.w } : {}),
       });
       widgets[inst.id] = inst;
       ws.widgetIds.push(inst.id);
+      // Stack positions far apart; the grid packs each widget up under the one above it.
+      if (seed.at) placed.push({ i: inst.id, x: seed.at[0], y: seed.at[1] * 400 });
+    }
+    if (placed.length) {
+      ws.layouts = Object.fromEntries(PRESET_LAYOUT_COLS.map((c) => [String(c), placed.map((p) => ({ ...p }))]));
+      // Reading order (top-left first) so narrower screens pack in the same order.
+      ws.widgetIds = [...placed].sort((a, b) => a.y - b.y || a.x - b.x).map((p) => p.i);
     }
   } else if (choice.mode === "duplicate") {
     const src = s.workspaces.find((w) => w.id === choice.fromId);

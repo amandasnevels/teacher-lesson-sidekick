@@ -116,18 +116,27 @@ describe("eight presets", () => {
       const types = s.workspaces[0].widgetIds.map((id) => s.widgets[id].type);
       expect(types.filter((t) => t === "champs")).toHaveLength(1);
       expect(types.filter((t) => t === "voice")).toHaveLength(p.kind === "wholeGroup" ? 0 : 1);
-      // Preset order is kept exactly (required widgets were already listed).
-      expect(types).toEqual(p.widgets.map((w) => w.type));
+      // Exactly the preset's widgets (required ones were already listed), with its widths and layout.
+      expect([...types].sort()).toEqual(p.widgets.map((w) => w.type).sort());
+      const ws = s.workspaces[0];
+      expect(ws.layouts?.["7"]).toHaveLength(p.widgets.length);
+      for (const seed of p.widgets) {
+        const inst = ws.widgetIds.map((id) => s.widgets[id]).find((w) => w.type === seed.type && (w.title ?? null) === (seed.title ?? null))!;
+        expect(inst.w ?? null).toBe(seed.w ?? null);
+        expect(ws.layouts!["7"].find((pos) => pos.i === inst.id)!.x).toBe(seed.at![0]);
+      }
     }
   });
   it("preset settings: Bryan ISD, Testing, Stations", () => {
     const bryan = freshSession("bryan");
     const b = bryan.workspaces[0].widgetIds.map((id) => bryan.widgets[id]);
-    expect(b.map((w) => w.type)).toEqual(["clock", "timer", "ican", "iwill", "champs", "hallpass", "picker", "voice", "checklist", "reward"]);
-    expect(b[9].size).toBe("S");
-    expect(b[0].config.showDate).toBe(true);
-    expect(b[1].config.durationSec).toBe(300);
-    expect(b[5].title).toBe("Check Out");
+    const of = (t: string) => b.find((w) => w.type === t)!;
+    // Reading order of the approved layout (top row first, left to right).
+    expect(b.map((w) => w.type)).toEqual(["clock", "ican", "iwill", "champs", "voice", "timer", "picker", "hallpass", "checklist", "reward"]);
+    expect(of("reward").size).toBe("S");
+    expect(of("clock").config.showDate).toBe(true);
+    expect(of("timer").config.durationSec).toBe(300);
+    expect(of("hallpass").title).toBe("Check Out");
     const t = freshSession("testing");
     const tw = t.workspaces[0].widgetIds.map((id) => t.widgets[id]);
     expect(tw.find((w) => w.type === "status")!.config.current).toBe("Testing");
@@ -143,6 +152,7 @@ describe("eight presets", () => {
     expect(trw.map((w) => w.type)).toEqual(["champs", "voice", "timer", "points", "notes"]);
     expect(trw[0].config.active).toBe("transitions");
     expect(trw[4].title).toBe("Student Reminders");
+    expect(trw.map((w) => w.w)).toEqual([1, 2, 1, 2, 1]);
     const c = freshSession("centers");
     const timer = c.workspaces[0].widgetIds.map((id) => c.widgets[id]).find((w) => w.type === "timer")!;
     expect(timer.config).toMatchObject({ durationSec: 900, stations: { enabled: true } });
