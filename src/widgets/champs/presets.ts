@@ -92,9 +92,39 @@ export const DEFAULT_CHAMPS: Record<ChampsPresetId, ChampsExpectations> = {
   },
 };
 
+/** Icon shown on each tile. "level" = the voice level number read from the Conversation text. */
+export type ChampsIcons = Record<ChampsKey, string>;
+
+export const DEFAULT_ICONS: Record<ChampsPresetId, ChampsIcons> = {
+  wholeGroup: { C: "level", H: "✋", A: "🧑‍🏫", M: "🪑", P: "👂", S: "⭐" },
+  smallGroup: { C: "level", H: "👥", A: "🧩", M: "🪑", P: "🗣️", S: "⭐" },
+  stations: { C: "level", H: "📋", A: "🧩", M: "🔄", P: "🤝", S: "⭐" },
+  independent: { C: "level", H: "✋", A: "✏️", M: "🪑", P: "💪", S: "⭐" },
+  partner: { C: "level", H: "🧑‍🤝‍🧑", A: "🧑‍🤝‍🧑", M: "🪑", P: "👂", S: "⭐" },
+  transitions: { C: "level", H: "✋", A: "🎒", M: "🚶", P: "🔔", S: "⭐" },
+  assessments: { C: "level", H: "✋", A: "📝", M: "🪑", P: "📖", S: "⭐" },
+  teacherTable: { C: "level", H: "🧑‍🏫", A: "📚", M: "🪑", P: "👀", S: "⭐" },
+};
+
+/** Icons teachers can pick from in More Settings. */
+export const ICON_CHOICES = ["level", "🤫", "🗣️", "💬", "✋", "🙋", "👥", "🧑‍🤝‍🧑", "🧑‍🏫", "📋", "📖", "📚", "✏️", "📝", "🧩", "💻", "🎒", "🪑", "🚶", "🔄", "👂", "👀", "🤝", "💪", "🔔", "⭐", "🏆", "✅"];
+
 export interface ChampsConfig {
   active: ChampsPresetId;
   presets: Record<ChampsPresetId, ChampsExpectations>;
+  icons?: Partial<Record<ChampsPresetId, Partial<ChampsIcons>>>;
+  /** Show the expectation text under each icon in the small (sidebar) view. */
+  showWords?: boolean;
+}
+
+export function iconsFor(config: Partial<ChampsConfig> | undefined, id: ChampsPresetId): ChampsIcons {
+  return { ...DEFAULT_ICONS[id], ...(config?.icons?.[id] ?? {}) };
+}
+
+/** "Level 0–1. Listen…" → "0–1"; null when the text has no level. */
+export function voiceLevelOf(text: string): string | null {
+  const m = /level\s*(\d(?:\s*[–-]\s*\d)?)/i.exec(text);
+  return m ? m[1].replace(/\s*[–-]\s*/, "–") : null;
 }
 
 export function defaultChampsConfig(): ChampsConfig {

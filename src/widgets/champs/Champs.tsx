@@ -2,19 +2,22 @@
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { useConfig } from "@/store/hooks";
-import { Button, Field, cx, inputCls } from "@/components/ui";
+import { Button, Field, Toggle, cx, inputCls } from "@/components/ui";
 import type { WidgetModule, WidgetProps } from "../types";
 import {
   CHAMPS_FIELDS,
   CHAMPS_PRESETS,
   DEFAULT_CHAMPS,
+  ICON_CHOICES,
   expectationsFor,
+  iconsFor,
   isPresetId,
   presetName,
   type ChampsConfig,
   type ChampsKey,
   type ChampsPresetId,
 } from "./presets";
+import { ChampsTile } from "./ChampsTile";
 
 /** Letter badge colors (white text passes contrast on each). */
 const LETTER_COLORS: Record<ChampsKey, string> = { C: "#c2410c", H: "#1d4ed8", A: "#047857", M: "#6d28d9", P: "#be185d", S: "#0f766e" };
@@ -22,32 +25,23 @@ const LETTER_COLORS: Record<ChampsKey, string> = { C: "#c2410c", H: "#1d4ed8", A
 function useChamps(id: string) {
   const [config, set] = useConfig<ChampsConfig>(id);
   const active: ChampsPresetId = isPresetId(config?.active) ? config.active : "wholeGroup";
-  return { config, set, active, expectations: expectationsFor(config, active) };
+  return { config, set, active, expectations: expectationsFor(config, active), icons: iconsFor(config, active) };
 }
 
 function Body({ id, view }: WidgetProps) {
-  const { config, set, active, expectations } = useChamps(id);
+  const { config, set, active, expectations, icons } = useChamps(id);
   const expanded = view === "expanded";
 
   if (expanded) {
-    // Projection view: the activity and its six expectations only. No teacher controls.
+    // Projection view: the activity and six picture tiles with their wording. No teacher controls.
     return (
-      <div className="rounded-3xl bg-white p-3 text-black sm:p-5" data-testid="champs-expanded">
-        <p className="text-center text-xs font-black uppercase tracking-[0.25em] text-neutral-700">CHAMPS</p>
-        <h3 className="mb-2 text-center text-3xl font-black leading-tight sm:text-4xl" data-testid="champs-active">
+      <div className="rounded-3xl bg-white p-3 text-black sm:p-4" data-testid="champs-expanded">
+        <h3 className="mb-3 text-center text-3xl font-black leading-tight sm:text-4xl" data-testid="champs-active">
           {presetName(active)}
         </h3>
-        <ol className="grid gap-2 md:grid-cols-2">
+        <ol className="mx-auto grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-6">
           {CHAMPS_FIELDS.map((f) => (
-            <li key={f.key} className="flex items-center gap-3 rounded-2xl border-4 border-black/10 px-3 py-2" data-testid={`champs-row-${f.key}`}>
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-4xl font-black text-white sm:h-16 sm:w-16 sm:text-5xl" style={{ background: LETTER_COLORS[f.key] }} aria-hidden>
-                {f.key}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-black uppercase tracking-wide text-neutral-700">{f.label}</span>
-                <span className="block text-2xl font-bold leading-tight">{expectations[f.key]}</span>
-              </span>
-            </li>
+            <ChampsTile key={f.key} letter={f.key} label={f.label} icon={icons[f.key]} text={expectations[f.key]} showText big />
           ))}
         </ol>
       </div>
@@ -55,46 +49,31 @@ function Body({ id, view }: WidgetProps) {
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="CHAMPS activity">
-        {CHAMPS_PRESETS.map((p) => {
-          const on = p.id === active;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => set({ active: p.id, presets: config?.presets ?? DEFAULT_CHAMPS })}
-              className={cx(
-                "min-h-10 rounded-xl px-2 text-left text-xs font-bold leading-tight transition",
-                on ? "bg-accent text-on-accent shadow-md ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--card)]" : "bg-soft hover:brightness-95",
-              )}
-            >
-              {on && <span aria-hidden>✓ </span>}
+    <div className="space-y-2">
+      <label className="block">
+        <span className="sr-only">CHAMPS activity</span>
+        <select
+          className={cx(inputCls, "min-h-10 font-black")}
+          value={active}
+          onChange={(e) => set({ active: e.target.value as ChampsPresetId, presets: config?.presets ?? DEFAULT_CHAMPS })}
+          aria-label="CHAMPS activity"
+          data-testid="champs-select"
+        >
+          {CHAMPS_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
               {p.name}
-            </button>
-          );
-        })}
-      </div>
-      <div aria-live="polite">
-        <p className="mb-1.5 text-center text-sm font-black" data-testid="champs-active">
-          {presetName(active)}
-        </p>
-        <ol className="space-y-1.5">
-          {CHAMPS_FIELDS.map((f) => (
-            <li key={f.key} className="flex items-start gap-2 rounded-xl bg-soft px-2 py-1.5" data-testid={`champs-row-${f.key}`}>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-lg font-black text-white" style={{ background: LETTER_COLORS[f.key] }} aria-hidden>
-                {f.key}
-              </span>
-              <span className="min-w-0 text-sm">
-                <span className="block text-[11px] font-black uppercase tracking-wide text-ink-soft">{f.label}</span>
-                <span className="block font-semibold leading-snug">{expectations[f.key]}</span>
-              </span>
-            </li>
+            </option>
           ))}
-        </ol>
-      </div>
+        </select>
+      </label>
+      <p className="sr-only" data-testid="champs-active" aria-live="polite">
+        {presetName(active)}
+      </p>
+      <ol className="grid grid-cols-3 gap-1.5" aria-label={`${presetName(active)} expectations`}>
+        {CHAMPS_FIELDS.map((f) => (
+          <ChampsTile key={f.key} letter={f.key} label={f.label} icon={icons[f.key]} text={expectations[f.key]} showText={!!config?.showWords} />
+        ))}
+      </ol>
     </div>
   );
 }
@@ -109,6 +88,9 @@ function Settings({ id }: { id: string }) {
   const { config, set, active } = useChamps(id);
   const [editing, setEditing] = useState<ChampsPresetId>(active);
   const values = expectationsFor(config, editing);
+  const icons = iconsFor(config, editing);
+  const setIcon = (key: ChampsKey, icon: string) =>
+    set({ icons: { ...(config?.icons ?? {}), [editing]: { ...(config?.icons?.[editing] ?? {}), [key]: icon } } });
   const update = (key: ChampsKey, text: string) =>
     set({ presets: { ...DEFAULT_CHAMPS, ...(config?.presets ?? {}), [editing]: { ...values, [key]: text } } });
 
@@ -124,8 +106,21 @@ function Settings({ id }: { id: string }) {
           ))}
         </select>
       </Field>
+      <Toggle checked={!!config?.showWords} onChange={(showWords) => set({ showWords })} label="Show words under icons" description="In the small view. Expand always shows the words." />
       {CHAMPS_FIELDS.map((f) => (
         <Field key={f.key} label={`${f.key} · ${f.label}`}>
+          <select
+            className={cx(inputCls, "mb-1 min-h-10")}
+            value={icons[f.key]}
+            onChange={(e) => setIcon(f.key, e.target.value)}
+            aria-label={`${presetName(editing)} ${f.label} icon`}
+          >
+            {ICON_CHOICES.map((ic) => (
+              <option key={ic} value={ic}>
+                {ic === "level" ? "Voice level number (from the text)" : ic}
+              </option>
+            ))}
+          </select>
           <textarea
             className={cx(inputCls, "min-h-16 py-2")}
             value={values[f.key]}
@@ -138,9 +133,12 @@ function Settings({ id }: { id: string }) {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => set({ presets: { ...DEFAULT_CHAMPS, ...(config?.presets ?? {}), [editing]: { ...DEFAULT_CHAMPS[editing] } } })}
+        onClick={() => {
+          const { [editing]: _drop, ...otherIcons } = config?.icons ?? {};
+          set({ presets: { ...DEFAULT_CHAMPS, ...(config?.presets ?? {}), [editing]: { ...DEFAULT_CHAMPS[editing] } }, icons: otherIcons });
+        }}
       >
-        <RotateCcw size={14} /> Reset {presetName(editing)} to starter wording
+        <RotateCcw size={14} /> Reset {presetName(editing)} to starter wording and icons
       </Button>
     </div>
   );

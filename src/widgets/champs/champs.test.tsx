@@ -3,7 +3,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { add, resetStore, S } from "@/test-utils";
 import { DEFINITIONS } from "../definitions";
 import Champs from "./Champs";
-import { CHAMPS_PRESETS, DEFAULT_CHAMPS } from "./presets";
+import { CHAMPS_PRESETS, DEFAULT_CHAMPS, DEFAULT_ICONS, voiceLevelOf } from "./presets";
 
 beforeEach(() => resetStore());
 
@@ -33,18 +33,38 @@ describe("CHAMPS presets", () => {
 });
 
 describe("CHAMPS widget", () => {
-  it("shows all eight presets; one click switches the six expectations", () => {
+  it("has a drop-down with all eight presets; choosing one switches the six picture tiles", () => {
     const id = add("champs");
     render(<Champs.Body id={id} view="normal" size="M" />);
-    const group = screen.getByRole("radiogroup", { name: "CHAMPS activity" });
-    expect(within(group).getAllByRole("radio")).toHaveLength(8);
-    expect(within(group).getByRole("radio", { name: /Whole Group/ })).toHaveAttribute("aria-checked", "true");
-    fireEvent.click(within(group).getByRole("radio", { name: /Stations/ }));
-    expect(within(group).getByRole("radio", { name: /Stations/ })).toHaveAttribute("aria-checked", "true");
-    expect(within(group).getByRole("radio", { name: /Whole Group/ })).toHaveAttribute("aria-checked", "false");
+    const select = screen.getByRole("combobox", { name: "CHAMPS activity" });
+    expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual(Object.keys(TABLE));
+    expect(select).toHaveValue("wholeGroup");
+    fireEvent.change(select, { target: { value: "stations" } });
+    expect(select).toHaveValue("stations");
     expect(screen.getByTestId("champs-active")).toHaveTextContent("Stations");
-    TABLE.Stations.forEach((text, i) => expect(screen.getByTestId(`champs-row-${"CHAMPS"[i]}`)).toHaveTextContent(text));
+    // Icons, not words: the wording is available to screen readers and as a tooltip only.
+    TABLE.Stations.forEach((text, i) => {
+      const tile = screen.getByTestId(`champs-row-${"CHAMPS"[i]}`);
+      expect(tile).toHaveTextContent(text);
+      expect(tile).toHaveAttribute("title", expect.stringContaining(text));
+      expect(within(tile).getByText(text)).toHaveClass("sr-only");
+    });
+    expect(screen.getByTestId("champs-row-C")).toHaveTextContent("2"); // voice level number on the tile
     expect(S().widgets[id].config.active).toBe("stations");
+  });
+
+  it("reads the voice level for the Conversation tile and has an icon for every field", () => {
+    expect(voiceLevelOf("Level 0–1. Move quietly.")).toBe("0–1");
+    expect(voiceLevelOf("Level 2. Talk with your partner.")).toBe("2");
+    expect(voiceLevelOf("Whisper only")).toBeNull();
+    for (const p of CHAMPS_PRESETS) expect(Object.keys(DEFAULT_ICONS[p.id])).toEqual(["C", "H", "A", "M", "P", "S"]);
+  });
+
+  it("can show words under the icons", () => {
+    const id = add("champs");
+    S().updateConfig(id, { showWords: true });
+    render(<Champs.Body id={id} view="normal" size="M" />);
+    expect(within(screen.getByTestId("champs-row-H")).getByText(TABLE["Whole Group"][1])).not.toHaveClass("sr-only");
   });
 
   it("editing a preset in settings keeps the displayed activity and other presets unchanged", () => {
@@ -67,13 +87,25 @@ describe("CHAMPS widget", () => {
     expect((S().widgets[id].config as typeof cfg).presets.stations.H).toBe("Ask three, then me.");
   });
 
+  it("changes a tile's icon for one preset only", () => {
+    const id = add("champs");
+    const Settings = Champs.Settings!;
+    render(<Settings id={id} />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Whole Group Success icon" }), { target: { value: "🏆" } });
+    const cfg = S().widgets[id].config as { icons: Record<string, Record<string, string>> };
+    expect(cfg.icons.wholeGroup.S).toBe("🏆");
+    expect(cfg.icons.stations).toBeUndefined();
+  });
+
   it("expanded view shows only the active activity and its expectations", () => {
     const id = add("champs");
     S().updateConfig(id, { active: "assessments" });
     render(<Champs.Body id={id} view="expanded" size="L" />);
     expect(screen.getByTestId("champs-active")).toHaveTextContent("Assessments");
     TABLE.Assessments.forEach((text) => expect(screen.getByTestId("champs-expanded")).toHaveTextContent(text));
-    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
     expect(screen.queryByRole("textbox")).toBeNull();
+    // Projection view shows the words under each tile.
+    expect(within(screen.getByTestId("champs-row-S")).getByText(TABLE.Assessments[5])).not.toHaveClass("sr-only");
   });
 });
