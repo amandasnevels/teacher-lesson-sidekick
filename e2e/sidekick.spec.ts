@@ -468,3 +468,33 @@ test("I Will: search ELPS by domain, add with a sentence stem, and track", async
   await widget(page, "iwill").getByRole("button", { name: /Tracker/ }).click();
   await expect(page.getByTestId("teks-tracker")).toContainText("ELPS 5B");
 });
+
+test("packed grid: short widgets stack beside tall ones; S/M/L size buttons", async ({ page }) => {
+  await page.setViewportSize({ width: 780, height: 900 });
+  await openApp(page);
+  await page.getByTestId("workspace-select").selectOption("__new");
+  await page.getByRole("dialog").getByRole("textbox").fill("Packing");
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  for (const n of ["CHAMPS", "Clock", "Dice", "Tally Counter"]) {
+    await page.getByRole("button", { name: "Add widget", exact: true }).click();
+    await page.getByRole("button", { name: `Add new ${n}`, exact: true }).click();
+  }
+  for (const t of ["CHAMPS", "Clock", "Dice", "Tally Counter"]) {
+    await page.getByRole("button", { name: `More options for ${t}` }).click();
+    await page.getByRole("menuitemradio", { name: "Small size" }).click();
+    await page.keyboard.press("Escape");
+  }
+  await expect(page.getByTestId("widget-grid")).toHaveAttribute("data-cols", "3");
+  const box = async (t: string) => (await page.locator(`[data-testid="widget-${t}"]`).boundingBox())!;
+  const [champs, clock, tally] = [await box("champs"), await box("clock"), await box("tally")];
+  // Tally fills the gap under the short Clock instead of starting a new row below CHAMPS.
+  expect(Math.abs(tally.x - clock.x)).toBeLessThan(2);
+  expect(tally.y).toBeGreaterThan(clock.y + clock.height);
+  expect(tally.y).toBeLessThan(champs.y + champs.height);
+  // Large = 3 columns.
+  await page.getByRole("button", { name: "More options for Clock" }).click();
+  await expect(page.getByRole("menuitemradio", { name: "Small size" })).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("menuitemradio", { name: "Large size" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[data-widget-id]').filter({ has: page.getByTestId("widget-clock") })).toHaveAttribute("data-span", "3");
+});

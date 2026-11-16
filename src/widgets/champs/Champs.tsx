@@ -24,7 +24,6 @@ import { voiceLevelForConversation } from "@/lib/voicePoints";
 import { VOICE_LEVELS } from "../voice/Voice";
 
 /** Letter badge colors (white text passes contrast on each). */
-const LETTER_COLORS: Record<ChampsKey, string> = { C: "#c2410c", H: "#1d4ed8", A: "#047857", M: "#6d28d9", P: "#be185d", S: "#0f766e" };
 
 function useChamps(id: string) {
   const [config, set] = useConfig<ChampsConfig>(id);
@@ -35,21 +34,27 @@ function useChamps(id: string) {
 function Body({ id, view }: WidgetProps) {
   const { config, set, active, expectations, icons, captions } = useChamps(id);
   const expanded = view === "expanded";
+  // Layout: Activity full width on top, then the activity card + Conversation, Help + Movement,
+  // Participation + Success.
+  const field = (key: ChampsKey) => CHAMPS_FIELDS.find((f) => f.key === key)!;
+  const ORDER: (ChampsKey | "preset")[] = ["A", "preset", "C", "H", "M", "P", "S"];
   const cards = (big: boolean) => (
     <>
-      <ChampsCard preset={active} letter="preset" label={presetName(active)} active big={big} testId="champs-active-card" />
-      {CHAMPS_FIELDS.map((f) => (
+      {ORDER.map((k) => k === "preset" ? (
+        <ChampsCard key="preset" preset={active} letter="preset" label={presetName(active)} active big={big} testId="champs-active-card" />
+      ) : (
         <ChampsCard
-          key={f.key}
+          key={k}
+          wide={k === "A" && !big}
           preset={active}
-          letter={f.key}
-          label={f.label}
-          caption={captions[f.key]}
-          details={expectations[f.key]}
-          icon={icons[f.key]}
+          letter={k}
+          label={field(k).label}
+          caption={captions[k]}
+          details={expectations[k]}
+          icon={icons[k]}
           big={big}
           showDetails={big || !!config?.showWords}
-          testId={`champs-row-${f.key}`}
+          testId={`champs-row-${k}`}
         />
       ))}
     </>
@@ -87,7 +92,7 @@ function Body({ id, view }: WidgetProps) {
       <p className="sr-only" data-testid="champs-active" aria-live="polite">
         {presetName(active)}
       </p>
-      <ol className="grid grid-cols-2 gap-2 [&>li:last-child]:col-span-2 [&>li:last-child]:mx-auto [&>li:last-child]:w-[calc(50%-0.25rem)]" aria-label={`${presetName(active)} expectations`}>
+      <ol className="grid grid-cols-2 gap-2" aria-label={`${presetName(active)} expectations`}>
         {cards(false)}
       </ol>
     </div>

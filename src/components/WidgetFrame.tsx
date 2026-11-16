@@ -194,6 +194,33 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize }: { i
           </div>
         ) : (
           <>
+            <div className="flex items-center gap-1 px-2 pb-1 pt-0.5" role="group" aria-label="Widget size">
+              <span className="mr-auto text-xs font-black uppercase text-ink-soft">Size</span>
+              {([
+                ["S", 1, "Small"],
+                ["M", 2, "Medium"],
+                ["L", 3, "Large"],
+              ] as const).map(([key, cols, name]) => {
+                const current = preferredSpan(w.w, w.size) === cols && w.h == null;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={current}
+                    aria-label={`${name} size`}
+                    title={`${name}: ${cols} column${cols === 1 ? "" : "s"} wide, height fits content`}
+                    onClick={() => {
+                      s().pushUndo("Resize widget", ["widgets"]);
+                      s().updateWidget(id, { size: key, w: cols, h: null });
+                    }}
+                    className={cx("flex h-9 w-9 items-center justify-center rounded-lg text-sm font-black transition", current ? "bg-accent text-on-accent" : "bg-black/5 hover:bg-black/10 dark:bg-white/10")}
+                  >
+                    {key}
+                  </button>
+                );
+              })}
+            </div>
             <MenuItem icon={<Copy size={16} />} onSelect={() => { closeMenu(); const nid = s().duplicateWidget(id); if (nid) s().flashWidget(nid); }}>
               Duplicate
             </MenuItem>

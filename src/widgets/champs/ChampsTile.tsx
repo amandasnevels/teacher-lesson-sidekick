@@ -33,7 +33,10 @@ export function ChampsCard({
   big,
   showDetails,
   testId,
+  wide,
 }: {
+  /** Full-width card (spans both columns) with a wider, shorter picture area. */
+  wide?: boolean;
   preset: ChampsPresetId;
   letter: ChampsKey | "preset";
   label: string;
@@ -48,19 +51,19 @@ export function ChampsCard({
   const c = TILE_COLORS[letter];
   const level = icon === "level" ? voiceLevelOf(details ?? "") : null;
   return (
-    <li className={cx("flex min-w-0 flex-col", big && letter === "preset" && "self-start")} data-testid={testId} title={details ? `${label}: ${details}` : label}>
+    <li className={cx("flex min-w-0 flex-col", wide && "col-span-2", big && letter === "preset" && "self-start")} data-testid={testId} title={details ? `${label}: ${details}` : label}>
       <div
         className={cx("relative flex flex-1 flex-col overflow-hidden rounded-[14px] border-[3px] shadow-sm", active && "champs-glow")}
         style={{ borderColor: c.edge, background: c.tint, containerType: "inline-size" }}
       >
         {/* label banner */}
         <div className="mx-[4%] mt-[4%] flex items-center justify-center rounded-full border-2 bg-white px-[4%] py-[2.5%]" style={{ borderColor: `${c.edge}66` }}>
-          <span className="whitespace-nowrap font-black uppercase leading-none" style={{ color: NAVY, fontSize: fit(label, 11, 98), letterSpacing: "-0.01em" }}>
+          <span className="whitespace-nowrap font-black uppercase leading-none" style={{ color: NAVY, fontSize: wide ? fit(label, 6, 50) : fit(label, 11, 98), letterSpacing: "-0.01em" }}>
             {label}
           </span>
         </div>
         {/* artwork */}
-        <div className={cx("relative flex min-h-0 flex-1 items-center justify-center", letter === "preset" && "mb-[4%] mx-[4%] mt-[3%] overflow-hidden rounded-[10px]")} style={{ aspectRatio: "3 / 1" }} aria-hidden>
+        <div className={cx("relative flex min-h-0 flex-1 items-center justify-center", letter === "preset" && "mb-[4%] mx-[4%] mt-[3%] overflow-hidden rounded-[10px]")} style={{ aspectRatio: wide ? "6 / 1" : "3 / 1" }} aria-hidden>
           {icon === "picture" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={artFor(preset, letter)} alt="" className={cx("h-full w-full", letter === "preset" && !big ? "absolute inset-0 object-cover" : "object-contain")} draggable={false} />
@@ -72,7 +75,7 @@ export function ChampsCard({
         </div>
         {/* caption bar */}
         {caption !== undefined && (
-          <div className="mx-[4%] mb-[4%] flex min-h-[2.2em] items-center justify-center rounded-full border-2 bg-white px-[4%] py-[2%] text-center" style={{ borderColor: `${c.edge}55`, fontSize: fit(caption, 8.5, 150) }}>
+          <div className="mx-[4%] mb-[4%] flex min-h-[2.2em] items-center justify-center rounded-full border-2 bg-white px-[4%] py-[2%] text-center" style={{ borderColor: `${c.edge}55`, fontSize: wide ? fit(caption, 4.5, 75) : fit(caption, 8.5, 150) }}>
             <span className="font-extrabold leading-tight" style={{ color: NAVY }} data-testid={testId ? `${testId}-caption` : undefined}>
               {caption}
             </span>

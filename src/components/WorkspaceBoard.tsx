@@ -10,7 +10,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { createContext, useContext, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useSidekick } from "@/store/store";
 import { MAX_SPAN, displaySpan, gridColumnsFor, preferredSpan, snapHeight, spanForWidth, type GridMetrics } from "@/lib/layout";
@@ -104,6 +104,26 @@ export function WorkspaceBoard() {
   );
 }
 
+/** Grid rows (4px each, plus 12px spacing) needed for the card's current height. */
+export const ROW_UNIT = 4;
+export const ROW_SPACING = 12;
+export const rowSpanFor = (cardHeight: number) => Math.max(1, Math.ceil((cardHeight + ROW_SPACING) / ROW_UNIT));
+
+/** Measures the card and keeps its row span in sync (content changes, collapse, resize, window size). */
+function useRowSpan(ref: React.RefObject<HTMLDivElement | null>) {
+  const [span, setSpan] = useState(60);
+  useLayoutEffect(() => {
+    const card = ref.current?.firstElementChild as HTMLElement | null;
+    if (!card) return;
+    const measure = () => setSpan(rowSpanFor(card.getBoundingClientRect().height));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(card);
+    return () => ro.disconnect();
+  }, [ref]);
+  return span;
+}
+
 function SortableWidget({ id }: { id: string }) {
   const locked = useSidekick((s) => !!s.widgets[id]?.locked);
   const collapsed = useSidekick((s) => !!s.widgets[id]?.collapsed);
@@ -113,6 +133,7 @@ function SortableWidget({ id }: { id: string }) {
   const cols = useContext(ColsContext);
   const metrics = useContext(MetricsContext);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const rowSpan = useRowSpan(wrapperRef);
   const [preview, setPreview] = useState<{ span: number; h: number } | null>(null);
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: locked || !!preview });
 
@@ -209,6 +230,7 @@ function SortableWidget({ id }: { id: string }) {
       data-widget-id={id}
       style={{
         gridColumn: `span ${span}`,
+        gridRowEnd: `span ${rowSpan}`,
         transform: CSS.Translate.toString(transform),
         transition: preview ? undefined : transition,
         zIndex: isDragging || preview ? 20 : undefined,
