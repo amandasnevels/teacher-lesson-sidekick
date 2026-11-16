@@ -12,6 +12,8 @@ test("a new visit shows the branded chooser with all eight presets, at desktop a
     await expect(page.getByAltText("Teacher Sidekick by NevelLabs")).toBeVisible();
     for (const name of ["Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Custom Workspace"])
       await expect(page.getByRole("button", { name: `Open ${name}`, exact: true })).toHaveText(`Open ${name}`);
+    await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
     // Nothing personal and no class or workspace dropdowns before a choice.
     await expect(page.getByTestId("class-select")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
@@ -21,6 +23,11 @@ test("a new visit shows the branded chooser with all eight presets, at desktop a
 test("choose a preset → session kept across refreshes in this tab; a new tab starts fresh; return to the chooser keeps the session", async ({ page, context }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/");
+  // Accounts aren't connected yet: the buttons explain that and collect nothing.
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByTestId("account-coming-soon")).toContainText("coming soon");
+  await expect(page.getByTestId("account-coming-soon").locator("input")).toHaveCount(0);
+  await page.getByRole("button", { name: /Got it/ }).click();
   await page.getByRole("checkbox", { name: /quick 4-step tour/ }).check();
   await page.getByRole("button", { name: "Open Bryan ISD Workspace", exact: true }).click();
   // Optional walkthrough.
