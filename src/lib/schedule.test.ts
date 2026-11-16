@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reminderDue, scheduleAt, type ReminderItem } from "./schedule";
+import { dueScheduleEvents, endMessage } from "./schedule";
 
 const periods = [
   { id: "a", name: "Reading", start: "08:00", end: "09:00" },
@@ -27,5 +28,25 @@ describe("schedule awareness", () => {
     const linked: ReminderItem = { ...r, repeat: "daily", periodId: "b", offset: -5 };
     expect(reminderDue(linked, periods, new Date(2026, 10, 14, 9, 5), "x")).toBe(true);
     expect(reminderDue(linked, periods, new Date(2026, 10, 14, 9, 8), "x")).toBe(false);
+  });
+});
+
+describe("dueScheduleEvents", () => {
+  const periods = [
+    { id: "a", name: "Period 1", start: "08:00", end: "08:50", classId: "c1" },
+    { id: "b", name: "Period 2", start: "08:50", end: "09:40", classId: "c2" },
+  ];
+  it("fires a period's start and end once, within a 2-minute window", () => {
+    expect(dueScheduleEvents(periods, 8 * 60, "d", []).map((e) => e.key)).toEqual(["d:a:start-at"]);
+    expect(dueScheduleEvents(periods, 8 * 60 + 1, "d", ["d:a:start-at"])).toEqual([]);
+    expect(dueScheduleEvents(periods, 8 * 60 + 5, "d", [])).toEqual([]); // too late, never fires hours afterwards
+  });
+  it("announces the end of one period before switching to the next class", () => {
+    const due = dueScheduleEvents(periods, 8 * 60 + 50, "d", []);
+    expect(due.map((e) => `${e.kind}:${e.period.id}`)).toEqual(["end:a", "start:b"]);
+  });
+  it("builds the spoken message", () => {
+    expect(endMessage("{period} is over. Clean up!", periods[0])).toBe("Period 1 is over. Clean up!");
+    expect(endMessage("", periods[1])).toBe("Period 2 is over.");
   });
 });

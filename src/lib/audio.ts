@@ -123,3 +123,21 @@ export function stopAllSounds() {
 export function isSoundId(v: unknown): v is SoundId {
   return typeof v === "string" && v in PLAYERS;
 }
+
+/**
+ * Read text aloud with the browser's built-in voice (no network). Respects mute and volume.
+ * Returns false when speech isn't available or sound is muted.
+ */
+export function speak(text: string): boolean {
+  if (settings.muted || typeof window === "undefined" || !("speechSynthesis" in window)) return false;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.volume = settings.volume;
+    u.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch {
+    return false;
+  }
+}

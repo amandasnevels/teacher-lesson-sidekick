@@ -7,9 +7,12 @@ import { randomInt } from "@/lib/random";
 import { Button, Toggle, cx } from "@/components/ui";
 import { RosterGate } from "../RosterGate";
 import type { WidgetModule, WidgetProps } from "../types";
+import { MasteryPicker } from "./Mastery";
 
 interface PickerConfig {
   markParticipation: boolean;
+  /** Correct / incorrect mastery check mode. */
+  mastery?: boolean;
 }
 
 /** Choose the next student: never repeats within a round. Returns null when everyone was drawn. */
@@ -20,11 +23,23 @@ export function drawNext(studentIds: string[], drawn: string[], rand = randomInt
 }
 
 function Body({ id, view }: WidgetProps) {
+  const [config, set] = useConfig<PickerConfig>(id);
   return (
     <RosterGate>
-      <PickerInner id={id} big={view === "expanded"} />
+      <div className="space-y-2">
+        <label className="flex min-h-9 cursor-pointer items-center gap-2 rounded-xl bg-soft/60 px-2 text-sm font-bold">
+          <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={!!config.mastery} onChange={(e) => set({ mastery: e.target.checked })} />
+          ✓ ✗ Correct / incorrect (mastery check)
+        </label>
+        {config.mastery ? <MasteryBody big={view === "expanded"} /> : <PickerInner id={id} big={view === "expanded"} />}
+      </div>
     </RosterGate>
   );
+}
+
+function MasteryBody({ big }: { big: boolean }) {
+  const cls = useActiveClass()!;
+  return <MasteryPicker cls={cls} big={big} />;
 }
 
 function PickerInner({ id, big }: { id: string; big: boolean }) {
@@ -141,12 +156,20 @@ function PickerInner({ id, big }: { id: string; big: boolean }) {
 function Settings({ id }: { id: string }) {
   const [c, set] = useConfig<PickerConfig>(id);
   return (
+    <div className="space-y-3">
+    <Toggle
+      checked={!!c.mastery}
+      onChange={(mastery) => set({ mastery })}
+      label="Correct / incorrect mastery check"
+      description="Check an I Can objective: correct answers earn a point; incorrect ones are quietly marked for reteach in the Mastery tracker."
+    />
     <Toggle
       checked={!!c.markParticipation}
       onChange={(markParticipation) => set({ markParticipation })}
       label="Mark participation when picked"
       description="Also checks the student off in the Participation tracker."
     />
+    </div>
   );
 }
 

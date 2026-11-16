@@ -74,7 +74,7 @@ function Body({ id, view }: WidgetProps) {
   const count = Math.max(1, Math.min(3, config.count || 1));
   const rots = Array.from({ length: count }, (_, i) => session?.rot?.[i] ?? { rx: -20, ry: 25 });
   const values = session?.values ?? [];
-  const size = view === "expanded" ? 150 : count === 1 ? 92 : 72;
+  const size = view === "expanded" ? 150 : count === 1 ? 80 : 60;
   const durationMs = reduced ? 250 : 1600;
 
   const roll = () => {
@@ -96,23 +96,26 @@ function Body({ id, view }: WidgetProps) {
 
   const total = values.reduce((a, b) => a + b, 0);
   return (
-    <div className="space-y-3 text-center">
-      <div className="flex min-h-28 items-center justify-center gap-5 py-3">
-        {rots.map((r, i) => (
-          <Die key={i} index={i} rot={r} size={size} color={config.dieColor} rolling={rolling} durationMs={durationMs} onDone={done} value={values[i] ?? null} />
-        ))}
+    <div className="space-y-1 text-center">
+      {/* Dice and the Roll button sit side by side to keep the card compact. */}
+      <div className={cx("flex items-center justify-center", view === "expanded" ? "flex-col gap-4 py-4" : "flex-wrap gap-x-4 gap-y-2 py-1")}>
+        <div className="flex items-center justify-center gap-4 py-2">
+          {rots.map((r, i) => (
+            <Die key={i} index={i} rot={r} size={size} color={config.dieColor} rolling={rolling} durationMs={durationMs} onDone={done} value={values[i] ?? null} />
+          ))}
+        </div>
+        <div className={cx("flex items-center gap-2", view === "expanded" ? "flex-row" : "flex-col")}>
+          <Button variant="accent" size={view === "expanded" ? "lg" : "md"} onClick={roll} disabled={rolling} className="min-w-24">
+            <Dices size={18} /> Roll
+          </Button>
+          <IconButton label="Reset dice" variant="outline" disabled={rolling} onClick={() => setSession(undefined)}>
+            <RotateCcw size={18} />
+          </IconButton>
+        </div>
       </div>
       <p className="min-h-7 text-lg font-black" aria-live="polite" data-testid="dice-result">
-        {!rolling && values.length > 0 ? (count > 1 ? `${values.join(" + ")} = ${total}` : `You rolled ${values[0]}`) : rolling ? "Rolling…" : " "}
+        {!rolling && values.length > 0 ? (count > 1 ? `${values.join(" + ")} = ${total}` : `You rolled ${values[0]}`) : rolling ? "Rolling…" : "\u00a0"}
       </p>
-      <div className="flex justify-center gap-2">
-        <Button variant="accent" size={view === "expanded" ? "lg" : "md"} onClick={roll} disabled={rolling} className="min-w-28">
-          <Dices size={18} /> Roll
-        </Button>
-        <IconButton label="Reset dice" variant="outline" disabled={rolling} onClick={() => setSession(undefined)}>
-          <RotateCcw size={18} />
-        </IconButton>
-      </div>
     </div>
   );
 }

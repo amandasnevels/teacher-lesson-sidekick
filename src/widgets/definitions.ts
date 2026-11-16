@@ -99,7 +99,13 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
       goal: 20,
       celebrate: true,
       resetMode: "manual",
+      visual: "number",
+      reward: "Class reward",
+      showAll: false,
+      secretImages: {},
     }),
+    // Secret pictures are chosen per class (and may be the teacher's own uploads): not exported.
+    favoriteConfig: (c) => ({ ...c, secretImages: {} }),
   },
   participation: {
     type: "participation",
@@ -319,6 +325,10 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
       remindMinutes: 2,
       remindSound: true,
       use24h: false,
+      autoClass: true,
+      endAlert: "sound",
+      endSound: "bell",
+      endText: "{period} is over. Please clean up and get ready for the next class.",
     }),
   },
   reminders: {

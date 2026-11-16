@@ -5,6 +5,8 @@ export interface Period {
   name: string;
   start: string; // HH:MM
   end: string; // HH:MM
+  /** Class taught this period: becomes the Active Class when the period starts. */
+  classId?: string | null;
 }
 
 export interface ScheduleNow {
@@ -63,4 +65,33 @@ export function reminderDue(r: ReminderItem, periods: Period[], now: Date, today
   if (m == null) return false;
   const nowMin = now.getHours() * 60 + now.getMinutes();
   return nowMin >= m && nowMin < m + 2;
+}
+
+export interface ScheduleEvent {
+  kind: "start" | "end";
+  period: Period;
+  /** Fires once per day per period/kind. */
+  key: string;
+}
+
+/**
+ * Period starts and ends that are due right now and haven't fired today. A 2-minute window
+ * tolerates throttled background tabs without firing late events hours afterwards.
+ */
+export function dueScheduleEvents(periods: Period[], nowMin: number, today: string, fired: string[]): ScheduleEvent[] {
+  const out: ScheduleEvent[] = [];
+  for (const p of sortedPeriods(periods)) {
+    for (const kind of ["start", "end"] as const) {
+      const at = parseHM(kind === "start" ? p.start : p.end)!;
+      const key = `${today}:${p.id}:${kind}-at`;
+      if (!fired.includes(key) && nowMin >= at && nowMin < at + 2) out.push({ kind, period: p, key });
+    }
+  }
+  // An end and the next start at the same minute: announce the end first.
+  return out.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "end" ? -1 : 1));
+}
+
+/** The words read aloud at the end of a period. `{period}` is replaced with its name. */
+export function endMessage(template: string, period: Period): string {
+  return (template || "{period} is over.").replace(/\{period\}/g, period.name).slice(0, 200);
 }

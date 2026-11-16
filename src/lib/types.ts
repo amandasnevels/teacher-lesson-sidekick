@@ -246,6 +246,8 @@ export interface ClassRecords {
   picker: Record<string, string[]>; // `${classId}:${instanceId}` → drawn student ids
   rewards: Record<string, number>; // `${classId}:${instanceId}` → progress count
   hallpass: Record<string, HallPassData>; // by classId
+  /** Name Picker mastery checks, by classId. */
+  mastery?: Record<string, import("./mastery").MasteryData>;
 }
 
 /** One trip out of the room. Names are copied so the log stays readable if the roster changes. */

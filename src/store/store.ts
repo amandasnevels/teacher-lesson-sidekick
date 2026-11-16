@@ -22,6 +22,7 @@ import type {
 import { uid } from "@/lib/ids";
 import { clone } from "@/lib/clone";
 import { validateNames, type ImportResult } from "@/lib/roster";
+import type { MasteryData, MasteryStatus } from "@/lib/mastery";
 import { DEFINITIONS } from "@/widgets/definitions";
 import { createDefaultState, makeInstance } from "./defaults";
 import { PERSISTED_KEYS } from "./persist";
@@ -190,6 +191,10 @@ interface Actions {
   startParticipationSession(classId: string): void;
   /** Starts a fresh session automatically on a new school day. */
   ensureParticipationDay(classId: string): void;
+  startMasteryCheck(classId: string, objective: { text: string; code?: string | null; teksId?: string | null }): string;
+  recordMastery(classId: string, checkId: string, studentId: string, status: MasteryStatus): void;
+  endMasteryCheck(classId: string, checkId: string): void;
+  deleteMasteryCheck(classId: string, checkId: string): void;
   setPickerDrawn(key: string, drawn: string[]): void;
   setReward(key: string, value: number): void;
   hallCheckOut(classId: string, studentId: string, destination: string, source?: "teacher" | "student"): boolean;
@@ -235,6 +240,8 @@ export const useSidekick = create<SidekickState>()((set, get) => {
   const hallOf = (classId: string): HallPassData => get().records.hallpass?.[classId] ?? { out: [], log: [] };
   const setHall = (classId: string, data: HallPassData) =>
     set((s) => ({ records: { ...s.records, hallpass: { ...(s.records.hallpass ?? {}), [classId]: data } } }));
+  const setMastery = (classId: string, fn: (d: MasteryData) => MasteryData) =>
+    set((s) => ({ records: { ...s.records, mastery: { ...(s.records.mastery ?? {}), [classId]: fn(s.records.mastery?.[classId] ?? { checks: [] }) } } }));
   const partOf = (classId: string) => get().records.participation[classId] ?? emptyParticipation();
   const setPart = (classId: string, data: ParticipationData) =>
     set((s) => ({ records: { ...s.records, participation: { ...s.records.participation, [classId]: data } } }));
@@ -368,6 +375,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
         const { [id]: _p, ...points } = s.records.points;
         const { [id]: _q, ...participation } = s.records.participation;
         const { [id]: _h, ...hallpass } = s.records.hallpass ?? {};
+        const { [id]: _m, ...mastery } = s.records.mastery ?? {};
         const strip = (rec: Record<string, unknown>) =>
           Object.fromEntries(Object.entries(rec).filter(([k]) => !k.startsWith(`${id}:`)));
         return {
@@ -379,6 +387,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
             picker: strip(s.records.picker) as Record<string, string[]>,
             rewards: strip(s.records.rewards) as Record<string, number>,
             hallpass,
+            mastery,
           },
         };
       });
@@ -454,7 +463,7 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     clearAllStudentData() {
       set((s) => ({
         classes: s.classes.map((c) => ({ ...c, students: [], groups: [] })),
-        records: { points: {}, participation: {}, picker: {}, rewards: {}, hallpass: {} },
+        records: { points: {}, participation: {}, picker: {}, rewards: {}, hallpass: {}, mastery: {} },
         undoStack: [],
       }));
     },
@@ -761,6 +770,38 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       const sessions = [...(p.sessions ?? [])];
       if (p.checked.length) sessions.push({ startedAt: p.lessonStartedAt, endedAt: p.lessonStartedAt, checked: p.checked, total });
       setPart(classId, { lessonStartedAt: Date.now(), checked: [], history: [], sessions: sessions.slice(-60) });
+    },
+    startMasteryCheck(classId, objective) {
+      const id = uid("mc");
+      setMastery(classId, (d) => ({
+        checks: [
+          ...d.checks.map((c) => (c.endedAt ? c : { ...c, endedAt: Date.now() })),
+          { id, objective: objective.text.slice(0, 400), code: objective.code ?? null, teksId: objective.teksId ?? null, startedAt: Date.now(), endedAt: null, results: {} },
+        ].slice(-100),
+      }));
+      return id;
+    },
+    recordMastery(classId, checkId, studentId, status) {
+      setMastery(classId, (d) => ({
+        checks: d.checks.map((c) => {
+          if (c.id !== checkId) return c;
+          const prev = c.results[studentId];
+          return {
+            ...c,
+            results: {
+              ...c.results,
+              [studentId]: { status, at: Date.now(), tries: (prev?.tries ?? 0) + (status === "absent" ? 0 : 1), afterReteach: status === "correct" && prev?.status === "reteach" ? true : prev?.afterReteach },
+            },
+          };
+        }),
+      }));
+    },
+    endMasteryCheck(classId, checkId) {
+      setMastery(classId, (d) => ({ checks: d.checks.map((c) => (c.id === checkId ? { ...c, endedAt: Date.now() } : c)) }));
+    },
+    deleteMasteryCheck(classId, checkId) {
+      get().pushUndo("Delete mastery check", ["records"]);
+      setMastery(classId, (d) => ({ checks: d.checks.filter((c) => c.id !== checkId) }));
     },
     setPickerDrawn(key, drawn) {
       set((s) => ({ records: { ...s.records, picker: { ...s.records.picker, [key]: drawn } } }));
