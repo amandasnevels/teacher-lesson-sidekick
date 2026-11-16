@@ -59,20 +59,18 @@ body {
 
 /* Widget grid: narrow-first. Preferred size only widens a card when there is room. */
 .widget-board { container-type: inline-size; }
-/*
- * Packed ("masonry") grid: rows are 4px tall and each widget spans as many rows as its height needs
- * (set inline from a measurement), so short widgets stack into the gaps beside tall ones.
- * Vertical spacing comes from the wrapper's bottom padding.
- */
-.widget-grid {
-  display: grid;
-  column-gap: 12px;
-  row-gap: 0;
-  grid-auto-rows: 4px;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
-  align-items: start;
+/* Free 2D widget grid (react-grid-layout). */
+.widget-board-grid { position: relative; min-height: 120px; }
+.widget-board-grid .react-grid-item { transition: none; }
+.widget-board-grid.animate .react-grid-item { transition: transform 180ms ease, width 180ms ease, height 180ms ease; }
+.widget-board-grid .react-grid-item.react-draggable-dragging { transition: none; z-index: 30; }
+.widget-board-grid .react-grid-item.react-grid-placeholder {
+  background: var(--brand);
+  opacity: 0.18;
+  border-radius: 24px;
+  transition-duration: 100ms;
 }
-.widget-grid > [data-widget-id] { padding-bottom: 12px; }
+.reduce-motion .widget-board-grid .react-grid-item { transition: none; }
 /* Column spans are set inline from each widget's preferred width, clamped to the columns that fit. */
 
 .widget-body { container-type: inline-size; }

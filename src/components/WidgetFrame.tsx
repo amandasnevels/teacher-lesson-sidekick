@@ -1,6 +1,5 @@
 "use client";
 import { memo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import {
   ChevronDown,
   Copy,
@@ -24,9 +23,8 @@ import { preferredSpan } from "@/lib/layout";
 import { Button, Field, IconButton, MenuItem, Modal, Popover, Segmented, cx, inputCls, usePrompt } from "./ui";
 
 export interface HandleProps {
-  ref: (el: HTMLElement | null) => void;
-  attributes: DraggableAttributes;
-  listeners: DraggableSyntheticListeners | undefined;
+  /** Arrow keys move the widget earlier/later (keyboard alternative to dragging). */
+  onKeyDown?: (e: ReactKeyboardEvent<HTMLElement>) => void;
   dragging: boolean;
 }
 
@@ -72,7 +70,7 @@ export function accentStyle(color: string): CSSProperties {
   return { ["--accent" as string]: c.accent, ["--on-accent" as string]: c.ink, ["--soft" as string]: `${c.accent}24` };
 }
 
-export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize }: { id: string; handle?: HandleProps; resize?: ResizeProps }) {
+export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize, scale = 1 }: { id: string; handle?: HandleProps; resize?: ResizeProps; scale?: number }) {
   const w = useWidget(id);
   const expanded = useSidekick((s) => s.expandedWidgetId === id);
   const flashing = useSidekick((s) => s.flashWidgetId === id);
@@ -121,12 +119,10 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize }: { i
         ) : (
           <button
             type="button"
-            ref={handle?.ref}
-            {...handle?.attributes}
-            {...handle?.listeners}
-            aria-label={`Drag to move ${title}`}
+            onKeyDown={handle?.onKeyDown}
+            aria-label={`Drag to move ${title}. Or use the arrow keys.`}
             aria-roledescription="drag handle"
-            className="flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-ink-soft hover:bg-black/5 active:cursor-grabbing dark:hover:bg-white/10"
+            className="widget-drag-handle flex h-10 w-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-ink-soft hover:bg-black/5 active:cursor-grabbing dark:hover:bg-white/10"
             data-testid="drag-handle"
           >
             <GripVertical size={18} />
@@ -155,7 +151,12 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize }: { i
       </div>
 
       {!w.collapsed && (
-        <div className={cx("widget-body p-3", resize?.enabled && "pb-6", resize?.height != null && "min-h-0 flex-1 overflow-y-auto")}>
+        <div
+          className={cx("widget-body p-3", resize?.enabled && "pb-6", resize?.height != null && "min-h-0 flex-1 overflow-y-auto")}
+          // Medium and Large widgets scale their contents up, not just the card.
+          style={scale !== 1 ? ({ zoom: scale } as CSSProperties) : undefined}
+          data-scale={scale}
+        >
           {expanded ? (
             <div className="flex flex-col items-center gap-2 py-3 text-center text-sm text-ink-soft">
               Showing in expanded view

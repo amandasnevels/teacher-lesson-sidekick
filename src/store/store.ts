@@ -5,6 +5,7 @@ import type {
   DockItemInput,
   HallPassData,
   HallPassEntry,
+  LayoutPos,
   TaughtEntry,
   Favorite,
   ParticipationData,
@@ -127,6 +128,10 @@ interface Actions {
   deleteWorkspace(id: string): void;
   setActiveWorkspace(id: string): void;
   setWidgetOrder(workspaceId: string, ids: string[]): void;
+  /** Save the teacher's arrangement for one column count, and the matching reading order. */
+  setWorkspaceLayout(workspaceId: string, cols: number, positions: LayoutPos[], order: string[]): void;
+  /** Forget arranged positions for one column count (e.g. after a keyboard reorder). */
+  clearWorkspaceLayout(workspaceId: string, cols: number): void;
 
   // widgets
   addWidget(type: WidgetType, opts?: Partial<WidgetInstance> & { atStart?: boolean; workspaceId?: string }): string;
@@ -444,6 +449,20 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     },
     setActiveWorkspace(id) {
       if (get().workspaces.some((w) => w.id === id)) set({ activeWorkspaceId: id, expandedWidgetId: null });
+    },
+    setWorkspaceLayout(workspaceId, cols, positions, order) {
+      set((s) => ({
+        workspaces: s.workspaces.map((w) => (w.id === workspaceId ? { ...w, widgetIds: order, layouts: { ...(w.layouts ?? {}), [String(cols)]: positions } } : w)),
+      }));
+    },
+    clearWorkspaceLayout(workspaceId, cols) {
+      set((s) => ({
+        workspaces: s.workspaces.map((w) => {
+          if (w.id !== workspaceId || !w.layouts?.[String(cols)]) return w;
+          const { [String(cols)]: _drop, ...rest } = w.layouts;
+          return { ...w, layouts: rest };
+        }),
+      }));
     },
     setWidgetOrder(workspaceId, ids) {
       set((s) => ({ workspaces: s.workspaces.map((w) => (w.id === workspaceId ? { ...w, widgetIds: ids } : w)) }));

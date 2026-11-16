@@ -248,6 +248,7 @@ test("widgets resize by dragging a corner; size persists and narrow windows don'
   await expect(page.getByTestId("resize-badge")).toContainText("3 cols");
   await page.mouse.up();
   await expect(card).toHaveAttribute("data-span", "3");
+  await page.waitForTimeout(400); // let the grid's move/size animation finish
   const after = (await card.boundingBox())!;
   expect(after.width).toBeGreaterThan(before.width + 200);
   expect(after.height).toBeGreaterThan(before.height + 80);
@@ -260,12 +261,14 @@ test("widgets resize by dragging a corner; size persists and narrow windows don'
   await page.mouse.move(gl.x + 260, gl.y + 2, { steps: 10 });
   await page.mouse.up();
   await expect(card).toHaveAttribute("data-span", "2");
+  await page.waitForTimeout(400);
   const resized = (await card.boundingBox())!;
 
   await waitForSave(page);
   await page.reload();
   const card2 = page.locator("[data-widget-id]").first();
   await expect(card2).toHaveAttribute("data-span", "2");
+  await page.waitForTimeout(400); // first paint measures heights, then the grid animates into place
   expect(Math.abs((await card2.boundingBox())!.height - resized.height)).toBeLessThan(2);
 
   // Narrow window: everything stacks, but the saved preference returns on a wide window.
@@ -497,4 +500,64 @@ test("packed grid: short widgets stack beside tall ones; S/M/L size buttons", as
   await page.getByRole("menuitemradio", { name: "Large size" }).click();
   await page.keyboard.press("Escape");
   await expect(page.locator('[data-widget-id]').filter({ has: page.getByTestId("widget-clock") })).toHaveAttribute("data-span", "3");
+});
+
+test("drag a widget under or above another in any column; contents grow with the size", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  await page.getByRole("button", { name: "Dismiss tip" }).click();
+  await page.getByTestId("workspace-select").selectOption("__new");
+  await page.getByRole("dialog").getByRole("textbox").fill("Stacking");
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  for (const n of ["CHAMPS", "Sticky Note", "Clock", "Dice"]) {
+    await page.getByRole("button", { name: "Add widget", exact: true }).click();
+    await page.getByRole("button", { name: `Add new ${n}`, exact: true }).click();
+  }
+  for (const t of ["CHAMPS", "Sticky Note", "Clock", "Dice"]) {
+    await page.getByRole("button", { name: `More options for ${t}` }).click();
+    await page.getByRole("menuitemradio", { name: "Small size" }).click();
+    await page.keyboard.press("Escape");
+  }
+  await page.waitForTimeout(400);
+  const box = async (t: string) => (await page.locator(`[data-testid="widget-${t}"]`).boundingBox())!;
+  const drag = async (t: string, target: string, below: boolean) => {
+    const h = (await page.locator(`[data-testid="widget-${t}"] [data-testid=drag-handle]`).boundingBox())!;
+    const b = await box(target);
+    await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(h.x + 30, h.y + 30, { steps: 5 });
+    // A diagonal path straight across other widgets: the drop spot depends only on where we let go.
+    await page.mouse.move(b.x + 40, below ? b.y + b.height - 10 : b.y + 10, { steps: 25 });
+    await page.mouse.up();
+    await page.waitForTimeout(400);
+  };
+  await drag("notes", "clock", true);
+  await drag("dice", "notes", true);
+  const [clock, notes, dice] = [await box("clock"), await box("notes"), await box("dice")];
+  expect(Math.abs(notes.x - clock.x)).toBeLessThan(2);
+  expect(Math.abs(dice.x - clock.x)).toBeLessThan(2);
+  expect(notes.y).toBeGreaterThan(clock.y + clock.height);
+  expect(dice.y).toBeGreaterThan(notes.y + notes.height);
+
+  await drag("dice", "clock", false); // top half of Clock → goes above it
+  expect((await box("dice")).y).toBeLessThan((await box("clock")).y);
+  const arranged = { clock: await box("clock"), dice: await box("dice"), notes: await box("notes") };
+  await waitForSave(page);
+  await page.reload();
+  await expect(page.getByTestId("widget-grid")).toBeVisible();
+  await page.waitForTimeout(400);
+  for (const t of ["clock", "dice", "notes"] as const) {
+    const b = await box(t);
+    expect(Math.abs(b.x - arranged[t].x)).toBeLessThan(2);
+    expect(Math.abs(b.y - arranged[t].y)).toBeLessThan(2);
+  }
+
+  // Large size scales the widget's contents, not just the card.
+  const body = page.locator('[data-testid="widget-clock"] [data-scale]');
+  await expect(body).toHaveAttribute("data-scale", "1");
+  await page.getByRole("button", { name: "More options for Clock" }).click();
+  await page.getByRole("menuitemradio", { name: "Large size" }).click();
+  await page.keyboard.press("Escape");
+  await expect(body).toHaveAttribute("data-scale", "1.4");
+  expect(await body.evaluate((el) => getComputedStyle(el).zoom)).toBe("1.4");
 });

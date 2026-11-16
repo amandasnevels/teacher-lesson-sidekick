@@ -100,11 +100,20 @@ export interface ClassRoom {
   defaultWorkspaceId?: string | null;
 }
 
+/** Where a widget sits in the 2D grid (column x, row y) for one column count. */
+export interface LayoutPos {
+  i: string;
+  x: number;
+  y: number;
+}
+
 export interface Workspace {
   id: string;
   name: string;
-  /** Ordered list of visible widget instance ids. */
+  /** Visible widget instance ids, in reading order (top-left to bottom-right). */
   widgetIds: string[];
+  /** Positions the teacher arranged, per column count (e.g. "3"). Missing widgets are placed automatically. */
+  layouts?: Record<string, LayoutPos[]>;
 }
 
 export interface WidgetInstance {
