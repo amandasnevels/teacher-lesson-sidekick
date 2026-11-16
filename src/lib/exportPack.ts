@@ -2,7 +2,7 @@
  * Shareable "settings packs": workspaces, widget configurations, favorites, routines and theme.
  * Student names and class records are NEVER included. Note text and uploaded pictures are dropped too.
  */
-import type { Favorite, PersistedState, QuickRoutine, RoutineAction, WidgetInstance, WidgetSize, WidgetType } from "./types";
+import type { Favorite, PersistedState, QuickRoutine, RoutineAction, WidgetInstance, WidgetSize, WidgetType, Workspace } from "./types";
 import { ALL_TYPES, DEFINITIONS } from "@/widgets/definitions";
 import { uid } from "./ids";
 import { clone } from "./clone";
@@ -24,7 +24,7 @@ export interface SettingsPack {
   version: 1;
   exportedAt: string;
   theme?: string;
-  workspaces: { name: string; widgets: PackWidget[] }[];
+  workspaces: { name: string; widgets: PackWidget[]; kind?: string; layout?: ({ x: number; y: number } | null)[]; layoutCols?: number }[];
   favorites: Omit<Favorite, "id" | "createdAt">[];
   routines: (Omit<QuickRoutine, "id" | "actions"> & { actions: (RoutineAction | { kind: "switchWorkspace"; workspaceIndex: number })[] })[];
 }
@@ -62,7 +62,19 @@ export function buildSettingsPack(s: PersistedState): SettingsPack {
     version: 1,
     exportedAt: new Date().toISOString(),
     theme: s.prefs.themeId,
-    workspaces: s.workspaces.filter((w) => !w.baseId).map((w) => ({ name: w.name, widgets: w.widgetIds.map((id) => s.widgets[id]).filter(Boolean).map(packWidget) })),
+    workspaces: s.workspaces.filter((w) => !w.baseId).map((w) => {
+      const live = w.widgetIds.filter((id) => s.widgets[id]);
+      // Positions from the widest saved arrangement, by widget index (no ids, no student data).
+      const key = Object.keys(w.layouts ?? {}).sort((a, b) => Number(b) - Number(a))[0];
+      const pos = key ? new Map(w.layouts![key].map((p) => [p.i, p])) : null;
+      return {
+        name: w.name,
+        kind: w.kind,
+        widgets: live.map((id) => s.widgets[id]).map(packWidget),
+        layout: pos ? live.map((id) => (pos.get(id) ? { x: pos.get(id)!.x, y: pos.get(id)!.y } : null)) : undefined,
+        layoutCols: key ? Number(key) : undefined,
+      };
+    }),
     favorites: s.favorites.map((f) => ({ name: scrub(f.name, names) as string, type: f.type, color: f.color, size: f.size, w: f.w ?? null, h: f.h ?? null, config: sanitizeConfig(f.type, f.config, names) })),
     routines: s.routines.map((r) => ({
       name: r.name,
@@ -102,7 +114,15 @@ export function importSettingsPack(raw: unknown, now = Date.now()) {
       };
       ids.push(wid);
     }
-    return { id, name: String(w.name ?? "Imported").slice(0, 40), widgetIds: ids };
+    const kinds = ["bryan", "wholeGroup", "centers", "testing", "smallGroup", "management", "daily", "transition", "custom", "assessment"];
+    const ws: Workspace = { id, name: String(w.name ?? "Imported").slice(0, 40), widgetIds: ids };
+    if (typeof w.kind === "string" && kinds.includes(w.kind)) ws.kind = w.kind as Workspace["kind"];
+    if (Array.isArray(w.layout) && w.layout.length === ids.length && w.layout.every((p) => !p || (Number.isFinite(p.x) && Number.isFinite(p.y)))) {
+      const positions = ids.flatMap((i, n) => (w.layout![n] ? [{ i, x: Math.max(0, Math.round(w.layout![n]!.x)), y: Math.max(0, Math.round(w.layout![n]!.y)) }] : []));
+      const from = typeof w.layoutCols === "number" ? w.layoutCols : 7;
+      ws.layouts = Object.fromEntries([from, 7, 8, 9, 10, 11, 12].filter((c, k, a) => c >= 1 && a.indexOf(c) === k).map((c) => [String(c), positions.map((q) => ({ ...q }))]));
+    }
+    return ws;
   });
   const favorites: Favorite[] = (p.favorites ?? []).filter((f) => validType(f.type)).map((f) => ({ ...f, id: uid("f"), createdAt: now, size: f.size ?? "M", config: f.config ?? {} }));
   const routines: QuickRoutine[] = (p.routines ?? []).map((r) => ({

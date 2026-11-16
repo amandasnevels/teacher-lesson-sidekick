@@ -4,7 +4,8 @@
  * A new visit shows nothing personal: no class, roster, notes or previous workspace.
  */
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check, LogIn, LogOut, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, LogOut } from "lucide-react";
+import { AccountBar } from "./Account";
 import { useSidekick, persistedSnapshot } from "@/store/store";
 import { useSelectValue } from "@/store/hooks";
 import { WORKSPACE_PRESETS, type PresetKind } from "@/store/presets";
@@ -72,7 +73,7 @@ export function WorkspaceChooser({ mode }: { mode: "welcome" | "switch" }) {
     >
       {confirmEl}
       <div className="mx-auto max-w-6xl px-4 pb-10 pt-5 sm:px-6">
-        {mode === "welcome" && <AccountButtons />}
+        <AccountBar mode={mode} />
         {mode === "switch" && (
           <Button variant="outline" size="sm" onClick={() => st().closeChooser()} className="mb-3">
             <ArrowLeft size={16} /> Back to {currentName || "my workspace"}
@@ -216,48 +217,5 @@ export function Walkthrough() {
         <p className="text-ink-soft">{s.body}</p>
       </div>
     </Modal>
-  );
-}
-
-/**
- * Log in / Create account. Accounts aren't connected yet (they need a secure sign-in service);
- * until then these explain that honestly and never collect anything. Sidekick works fully without one.
- */
-function AccountButtons() {
-  const [open, setOpen] = useState<null | "login" | "create">(null);
-  return (
-    <div className="mb-2 flex justify-end gap-2" data-testid="account-buttons">
-      <Button variant="outline" size="sm" onClick={() => setOpen("login")}>
-        <LogIn size={16} /> Log in
-      </Button>
-      <Button variant="primary" size="sm" onClick={() => setOpen("create")}>
-        <UserPlus size={16} /> Create account
-      </Button>
-      <Modal
-        open={!!open}
-        onClose={() => setOpen(null)}
-        title={open === "create" ? "Create a free account" : "Log in"}
-        footer={
-          <Button variant="primary" onClick={() => setOpen(null)}>
-            Got it — start teaching
-          </Button>
-        }
-      >
-        <div className="space-y-3 text-sm" data-testid="account-coming-soon">
-          <p className="text-4xl" aria-hidden>
-            🔐
-          </p>
-          <p className="text-base font-bold">Teacher accounts are coming soon.</p>
-          <p>
-            With an account you&rsquo;ll be able to sign in with Google or email and keep your favorite workspaces, layouts and settings on any computer.
-          </p>
-          <p className="text-ink-soft">
-            You don&rsquo;t need an account to use Sidekick. Choose a workspace below. Your classes and changes stay in this browser tab while you teach, and student
-            information is never sent anywhere.
-          </p>
-          <p className="text-ink-soft">To keep your layouts for next time, use Settings → Data &amp; Privacy → Export settings pack.</p>
-        </div>
-      </Modal>
-    </div>
   );
 }

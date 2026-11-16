@@ -76,6 +76,18 @@ Nothing personal is loaded until a preset is chosen, and nothing personal is sav
   "Delete it from this device" (both confirmed).
 - Automated tests start from a sample workspace with `/?start=sample` (no personal data).
 
+## Teacher accounts (optional, Supabase)
+
+Accounts are off until two public settings are added in Vercel (Project → Settings → Environment
+Variables): `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Run
+`supabase/schema.sql` once in the Supabase SQL editor (it creates `teacher_settings` with row-level
+security so each teacher only sees their own row).
+
+- Passwords are handled by Supabase; this app never stores or logs them.
+- Only a student-free settings pack is saved (workspaces, layouts, widget settings, favorites,
+  routines, theme). Rosters, student names and class records never leave the device.
+- Saving is explicit (Main menu → "Save my setup"), so a fresh session never overwrites a saved one.
+
 ## Deploying to Vercel (when you're ready)
 
 This is a standard Next.js app with no server-side data or secrets, so it deploys with defaults.
