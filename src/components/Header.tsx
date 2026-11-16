@@ -6,12 +6,29 @@ import { useSidekick } from "@/store/store";
 import { IconButton, cx, usePrompt } from "./ui";
 import { ClassSwitchDialog, NewWorkspaceDialog } from "./WorkspaceDialogs";
 import { isShared, overrideFor, sharedIdOf } from "@/store/workspaceLogic";
+import { WORKSPACE_PRESETS, type PresetKind } from "@/store/presets";
 
 export function Header() {
   const s = useSidekick.getState;
   const classes = useSelectValue((st) => st.classes.map((c) => ({ id: c.id, name: c.name, n: c.students.length })));
   const activeClassId = useSidekick((st) => st.activeClassId);
-  const workspaces = useSelectValue((st) => st.workspaces.filter(isShared).map((w) => ({ id: w.id, name: w.name })));
+  const sharedWs = useSelectValue((st) => st.workspaces.filter(isShared).map((w) => ({ id: w.id, name: w.name, kind: w.kind ?? null })));
+  // All eight presets are always listed (in preset order); ones not opened yet are created on
+  // first pick. Other workspaces (duplicates, blank, imported) follow.
+  const used = new Set<string>();
+  const workspaces: { id: string; name: string }[] = WORKSPACE_PRESETS.map((p) => {
+    const ws = sharedWs.find((w) => w.kind === p.kind && !used.has(w.id));
+    if (ws) {
+      used.add(ws.id);
+      return { id: ws.id, name: ws.name };
+    }
+    return { id: `__preset:${p.kind}`, name: p.name };
+  });
+  for (const w of sharedWs) if (!used.has(w.id)) workspaces.push({ id: w.id, name: w.name });
+  const pickWorkspace = (v: string) => {
+    if (v.startsWith("__preset:")) s().openPresetWorkspace(v.slice("__preset:".length) as PresetKind);
+    else s().setActiveWorkspace(v);
+  };
   // The dropdown shows the shared workspace; a class customization is shown as "(P2 version)".
   const activeWs = useSidekick((st) => sharedIdOf(st, st.activeWorkspaceId));
   const customized = useSidekick((st) => st.workspaces.some((w) => w.id === st.activeWorkspaceId && !!w.baseId));
@@ -112,7 +129,7 @@ export function Header() {
                 else if (v === "__customize") s().setCustomizeForClass(true);
                 else if (v === "__shared") s().setCustomizeForClass(false);
                 else if (v === "__manage") s().openSettings("workspaces");
-                else s().setActiveWorkspace(v);
+                else pickWorkspace(v);
               }}
             >
               {workspaces.map((w) => (
@@ -136,7 +153,7 @@ export function Header() {
                 key={w.id}
                 role="tab"
                 aria-selected={w.id === activeWs}
-                onClick={() => s().setActiveWorkspace(w.id)}
+                onClick={() => pickWorkspace(w.id)}
                 className={cx("min-h-9 shrink-0 rounded-full px-3 text-sm font-bold", w.id === activeWs ? "bg-brand text-brand-ink" : "bg-black/5 dark:bg-white/10")}
               >
                 {w.name}

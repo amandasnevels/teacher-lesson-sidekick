@@ -52,7 +52,16 @@ test("choose a preset → session kept across refreshes in this tab; a new tab s
   // Choosing it again opens the same workspace instead of a copy.
   await page.getByRole("button", { name: /open the workspace chooser/ }).click();
   await page.getByRole("button", { name: "Open Bryan ISD Workspace", exact: true }).click();
-  await expect(page.getByTestId("workspace-select").locator("option")).toHaveText(["Bryan ISD Workspace", "Testing", "✏️ Customize for This Class", "＋ New workspace…", "Manage workspaces…"]);
+  // All eight presets are listed; picking one that isn't open yet creates it once.
+  const options = page.getByTestId("workspace-select").locator("option");
+  await expect(options).toHaveText([
+    "Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Custom Workspace",
+    "✏️ Customize for This Class", "＋ New workspace…", "Manage workspaces…",
+  ]);
+  await page.getByTestId("workspace-select").selectOption({ label: "Small Group" });
+  await expect(page.getByTestId("workspace-select").locator("option:checked")).toHaveText("Small Group");
+  await expect(page.locator('[data-testid="widget-participation"]')).toHaveCount(1);
+  await expect(options).toHaveCount(11);
 
   // A genuinely new visit (new tab) starts fresh: no class, no workspace.
   const fresh = await context.newPage();
