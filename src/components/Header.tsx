@@ -22,11 +22,15 @@ export function Header() {
       {promptEl}
       <div className="flex items-center gap-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand text-lg shadow-sm" aria-hidden>
-            🧰
-          </span>
-          <h1 className="min-w-0 truncate text-base font-black leading-tight sm:text-lg">
-            <span className="hidden min-[360px]:inline">Teacher </span>Sidekick
+          <h1 className="m-0 min-w-0 leading-none">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/teacher-sidekick-logo.webp"
+              alt="Teacher Sidekick by NevelLabs"
+              width={443}
+              height={160}
+              className="brand-logo block h-11 w-auto sm:h-12 max-w-full object-contain object-left"
+            />
           </h1>
         </div>
         <IconButton label="Quick Find (Ctrl+K)" onClick={() => s().setQuickFind(true)} variant="outline">

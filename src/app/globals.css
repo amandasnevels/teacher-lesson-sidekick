@@ -120,3 +120,6 @@ body {
 .champs-glow {
   box-shadow: 0 0 0 3px #ffd84d, 0 0 14px 4px rgba(255, 196, 0, 0.75);
 }
+
+/* The logo's dark lettering needs a light plate on the dark theme. */
+.dark .brand-logo { background: #ffffff; border-radius: 12px; padding: 2px 6px; }

@@ -3,9 +3,9 @@ import "react-grid-layout/css/styles.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Teacher Lesson Sidekick",
+  title: "Teacher Sidekick by NevelLabs",
   description: "Your classroom tools. Your layout. Your teaching flow.",
-  applicationName: "Teacher Lesson Sidekick",
+  applicationName: "Teacher Sidekick",
 };
 
 export const viewport: Viewport = {
