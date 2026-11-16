@@ -6,7 +6,7 @@
  * They never contain rosters, grades, notes or any other personal or district records.
  * CHAMPS is in every preset; Voice Level in every preset except Whole Group (see workspaceLogic).
  */
-import type { WidgetType, WorkspaceKind } from "@/lib/types";
+import type { WidgetSize, WidgetType, WorkspaceKind } from "@/lib/types";
 
 export interface PresetWidget {
   type: WidgetType;
@@ -14,6 +14,8 @@ export interface PresetWidget {
   title?: string;
   /** Merged over the widget's own default settings. */
   config?: Record<string, unknown>;
+  /** Starting size (S / M / L). */
+  size?: WidgetSize;
 }
 
 export type PresetKind = Exclude<WorkspaceKind, "assessment">;
@@ -28,6 +30,7 @@ export interface WorkspacePreset {
 
 const champs = (active: string): PresetWidget => ({ type: "champs", config: { active } });
 const clockWithDate: PresetWidget = { type: "clock", config: { showDate: true } };
+const smallReward: PresetWidget = { type: "reward", size: "S" };
 
 export const WORKSPACE_PRESETS: WorkspacePreset[] = [
   {
@@ -44,6 +47,8 @@ export const WORKSPACE_PRESETS: WorkspacePreset[] = [
       { type: "hallpass", title: "Check Out" },
       { type: "picker" },
       { type: "voice" },
+      { type: "checklist" },
+      smallReward,
     ],
   },
   {
@@ -51,7 +56,7 @@ export const WORKSPACE_PRESETS: WorkspacePreset[] = [
     name: "Whole Group",
     emoji: "🧑‍🏫",
     description: "Direct teaching with objectives, calling on students and quick cues.",
-    widgets: [champs("wholeGroup"), clockWithDate, { type: "timer" }, { type: "ican" }, { type: "picker" }, { type: "participation" }, { type: "soundboard" }, { type: "cues" }],
+    widgets: [champs("wholeGroup"), clockWithDate, { type: "timer" }, { type: "ican" }, { type: "picker" }, { type: "participation" }, { type: "soundboard" }, { type: "cues" }, smallReward],
   },
   {
     kind: "centers",
@@ -90,7 +95,7 @@ export const WORKSPACE_PRESETS: WorkspacePreset[] = [
     name: "Small Group",
     emoji: "👥",
     description: "A quiet teacher-table setup with groups, objectives and participation.",
-    widgets: [champs("smallGroup"), { type: "voice", config: { level: "whisper" } }, { type: "timer" }, { type: "ican" }, { type: "groups" }, { type: "participation" }, { type: "notes" }],
+    widgets: [champs("smallGroup"), { type: "voice", config: { level: "whisper" } }, { type: "timer" }, { type: "ican" }, { type: "groups" }, { type: "participation" }, { type: "notes" }, { type: "hallpass" }],
   },
   {
     kind: "management",
@@ -105,6 +110,19 @@ export const WORKSPACE_PRESETS: WorkspacePreset[] = [
     emoji: "🗓️",
     description: "Your day at a glance: schedule, reminders, check-outs and notes.",
     widgets: [champs("wholeGroup"), { type: "voice" }, clockWithDate, { type: "schedule" }, { type: "reminders" }, { type: "hallpass" }, { type: "checklist" }, { type: "notes" }],
+  },
+  {
+    kind: "transition",
+    name: "Transition",
+    emoji: "🔁",
+    description: "Smooth changes between activities: a timer, voice level, points and reminders.",
+    widgets: [
+      champs("transitions"),
+      { type: "voice" },
+      { type: "timer", config: { durationSec: 120 } },
+      { type: "points" },
+      { type: "notes", title: "Student Reminders" },
+    ],
   },
   {
     kind: "custom",

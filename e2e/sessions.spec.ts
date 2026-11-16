@@ -10,7 +10,7 @@ test("a new visit shows the branded chooser with all eight presets, at desktop a
     await expect(page.getByRole("heading", { name: "Welcome to Teacher Sidekick!" })).toBeVisible();
     await expect(page.getByText("Your classroom tools, ready when you are. Choose a teaching workspace to get started.")).toBeVisible();
     await expect(page.getByAltText("Teacher Sidekick by NevelLabs")).toBeVisible();
-    for (const name of ["Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Custom Workspace"])
+    for (const name of ["Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace"])
       await expect(page.getByRole("button", { name: `Open ${name}`, exact: true })).toHaveText(`Open ${name}`);
     await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
@@ -35,7 +35,7 @@ test("choose a preset → session kept across refreshes in this tab; a new tab s
   await page.getByRole("button", { name: "Skip" }).click();
   await expect(page.getByTestId("widget-grid")).toBeVisible();
   const order = await page.locator("[data-widget-id] [data-testid^=widget-]").evaluateAll((els) => els.map((e) => e.getAttribute("data-testid")));
-  expect([...order].sort()).toEqual(["widget-champs", "widget-clock", "widget-hallpass", "widget-ican", "widget-iwill", "widget-picker", "widget-timer", "widget-voice"].sort());
+  expect([...order].sort()).toEqual(["widget-champs", "widget-checklist", "widget-clock", "widget-hallpass", "widget-ican", "widget-iwill", "widget-picker", "widget-reward", "widget-timer", "widget-voice"].sort());
   await expect(page.getByRole("heading", { name: "Check Out" })).toBeVisible();
 
   // Add a demo class.
@@ -62,13 +62,13 @@ test("choose a preset → session kept across refreshes in this tab; a new tab s
   // All eight presets are listed; picking one that isn't open yet creates it once.
   const options = page.getByTestId("workspace-select").locator("option");
   await expect(options).toHaveText([
-    "Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Custom Workspace",
+    "Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace",
     "✏️ Customize for This Class", "＋ New workspace…", "Manage workspaces…",
   ]);
   await page.getByTestId("workspace-select").selectOption({ label: "Small Group" });
   await expect(page.getByTestId("workspace-select").locator("option:checked")).toHaveText("Small Group");
   await expect(page.locator('[data-testid="widget-participation"]')).toHaveCount(1);
-  await expect(options).toHaveCount(11);
+  await expect(options).toHaveCount(12);
 
   // A genuinely new visit (new tab) starts fresh: no class, no workspace.
   const fresh = await context.newPage();

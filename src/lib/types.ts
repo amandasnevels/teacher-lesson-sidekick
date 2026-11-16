@@ -120,6 +120,7 @@ export type WorkspaceKind =
   | "smallGroup"
   | "management"
   | "daily"
+  | "transition"
   | "custom"
   /** Legacy (earlier "Assessment & Review" template). */
   | "assessment";

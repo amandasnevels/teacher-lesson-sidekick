@@ -22,6 +22,7 @@ const ACCENTS: Record<PresetKind, { bg: string; ring: string }> = {
   smallGroup: { bg: "#ffe8f3", ring: "#e05ba6" },
   management: { bg: "#fff8d6", ring: "#d9a400" },
   daily: { bg: "#e4f8fb", ring: "#1aa6b7" },
+  transition: { bg: "#fde9e4", ring: "#e5674d" },
   custom: { bg: "#f3eefe", ring: "#9b51e0" },
 };
 

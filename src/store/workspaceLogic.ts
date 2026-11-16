@@ -162,7 +162,11 @@ export function createWorkspace(s: PersistedState, choice: NewWorkspaceChoice): 
     ws = { ...ws, kind: t.kind };
     widgets = { ...s.widgets };
     for (const seed of t.widgets) {
-      const inst = makeInstance(seed.type, id, { ...(seed.config ? { config: seed.config } : {}), ...(seed.title ? { title: seed.title } : {}) });
+      const inst = makeInstance(seed.type, id, {
+        ...(seed.config ? { config: seed.config } : {}),
+        ...(seed.title ? { title: seed.title } : {}),
+        ...(seed.size ? { size: seed.size } : {}),
+      });
       widgets[inst.id] = inst;
       ws.widgetIds.push(inst.id);
     }

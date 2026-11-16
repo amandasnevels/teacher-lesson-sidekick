@@ -123,7 +123,8 @@ describe("eight presets", () => {
   it("preset settings: Bryan ISD, Testing, Stations", () => {
     const bryan = freshSession("bryan");
     const b = bryan.workspaces[0].widgetIds.map((id) => bryan.widgets[id]);
-    expect(b.map((w) => w.type)).toEqual(["clock", "timer", "ican", "iwill", "champs", "hallpass", "picker", "voice"]);
+    expect(b.map((w) => w.type)).toEqual(["clock", "timer", "ican", "iwill", "champs", "hallpass", "picker", "voice", "checklist", "reward"]);
+    expect(b[9].size).toBe("S");
     expect(b[0].config.showDate).toBe(true);
     expect(b[1].config.durationSec).toBe(300);
     expect(b[5].title).toBe("Check Out");
@@ -132,6 +133,16 @@ describe("eight presets", () => {
     expect(tw.find((w) => w.type === "status")!.config.current).toBe("Testing");
     expect(tw.find((w) => w.type === "voice")!.config).toMatchObject({ level: "silent", alertOn: false });
     expect(tw.find((w) => w.type === "timer")!.config.soundOn).toBe(false);
+    const wg = freshSession("wholeGroup");
+    const wgw = wg.workspaces[0].widgetIds.map((id) => wg.widgets[id]);
+    expect(wgw.find((w) => w.type === "reward")!.size).toBe("S");
+    const sg = freshSession("smallGroup");
+    expect(sg.workspaces[0].widgetIds.map((id) => sg.widgets[id].type)).toContain("hallpass");
+    const tr = freshSession("transition");
+    const trw = tr.workspaces[0].widgetIds.map((id) => tr.widgets[id]);
+    expect(trw.map((w) => w.type)).toEqual(["champs", "voice", "timer", "points", "notes"]);
+    expect(trw[0].config.active).toBe("transitions");
+    expect(trw[4].title).toBe("Student Reminders");
     const c = freshSession("centers");
     const timer = c.workspaces[0].widgetIds.map((id) => c.widgets[id]).find((w) => w.type === "timer")!;
     expect(timer.config).toMatchObject({ durationSec: 900, stations: { enabled: true } });
