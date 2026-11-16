@@ -25,9 +25,9 @@ export function Header() {
           <h1 className="m-0 min-w-0 leading-none">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/brand/teacher-sidekick-logo.webp"
+              src="/brand/teacher-sidekick-logo-wide.webp"
               alt="Teacher Sidekick by NevelLabs"
-              width={443}
+              width={798}
               height={160}
               className="brand-logo block h-11 w-auto sm:h-12 max-w-full object-contain object-left"
             />
