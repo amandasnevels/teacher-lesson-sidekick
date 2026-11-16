@@ -1,7 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 
+/** Opens the sample workspace (no personal data) so a test can skip the opening chooser. */
 export async function openApp(page: Page) {
-  await page.goto("/");
+  await page.goto("/?start=sample");
   await expect(page.getByTestId("widget-grid")).toBeVisible();
 }
 
@@ -26,9 +27,12 @@ export async function champsOnlyWorkspace(page: Page, name: string) {
   await dlg.getByRole("radio", { name: /Whole Group/ }).click();
   await dlg.getByRole("textbox").fill(name);
   await page.getByRole("button", { name: "Create", exact: true }).click();
-  for (const t of ["Timer", "Clock", "Name Picker", "Soundboard"]) {
-    await page.getByRole("button", { name: `More options for ${t}` }).click();
-    await page.getByRole("menuitem", { name: "Remove" }).click();
+  // Remove everything except CHAMPS.
+  const others = page.locator("[data-widget-id]").filter({ hasNot: page.locator('[data-testid="widget-champs"]') });
+  while ((await others.count()) > 0) {
+    await others.first().getByRole("button", { name: /^More options for/ }).click();
+    await page.getByRole("menuitem", { name: "Remove", exact: true }).click();
+    await page.waitForTimeout(150);
   }
   await expect(page.locator("[data-widget-id]")).toHaveCount(1);
 }

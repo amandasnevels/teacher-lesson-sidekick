@@ -1,5 +1,6 @@
 /** Opening Sidekick as its own narrow window beside the teacher's slides or website. */
 import { flush } from "@/store/autosave";
+import { currentSessionId } from "@/store/persist";
 
 export const POPOUT_NAME = "sidekick-popout";
 export const POPOUT_WIDTH = 400;
@@ -15,7 +16,11 @@ export async function openSidekickWindow(): Promise<boolean> {
   const left = (s.availLeft ?? 0) + Math.max(0, s.availWidth - POPOUT_WIDTH);
   const top = s.availTop ?? 0;
   const features = `popup=yes,width=${POPOUT_WIDTH},height=${s.availHeight},left=${left},top=${top}`;
-  const w = window.open(window.location.href, POPOUT_NAME, features);
+  // The new window continues this tab's session (and this window pauses).
+  const url = new URL(window.location.href);
+  const sid = currentSessionId();
+  if (sid) url.searchParams.set("session", sid);
+  const w = window.open(url.toString(), POPOUT_NAME, features);
   if (!w) return false;
   w.focus();
   return true;

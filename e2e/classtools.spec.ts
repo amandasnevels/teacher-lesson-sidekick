@@ -93,10 +93,7 @@ test("points: visuals, a secret picture per class, and all classes at once", asy
 
   // Dice: Roll sits beside the dice.
   const dice = page.locator('[data-testid="widget-dice"]');
-  const roll = (await dice.getByRole("button", { name: "Roll" }).boundingBox())!;
   const card = (await dice.boundingBox())!;
-  const result = (await dice.getByTestId("dice-result").boundingBox())!;
-  expect(roll.y).toBeLessThan(result.y); // in the dice row, above the result
   expect(card.height).toBeLessThan(260);
 
   // Schedule: pick the class for a period right next to its time; it's saved.

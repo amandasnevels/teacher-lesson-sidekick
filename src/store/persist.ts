@@ -6,7 +6,7 @@
  *  - Student data retention: when the teacher chooses "session only", rosters and class records
  *    are stripped before writing, so they never reach disk.
  */
-import { get, set, createStore, type UseStore } from "idb-keyval";
+import { createStore, del, delMany, get, getMany, keys, set, type UseStore } from "idb-keyval";
 import type { PersistedState } from "@/lib/types";
 import { DEFAULT_PREFS, SCHEMA_VERSION, createDefaultState } from "./defaults";
 import { ensureAllRequired } from "./workspaceLogic";
@@ -72,54 +72,227 @@ export function migrate(raw: unknown): PersistedState {
   return ensureAllRequired(merged);
 }
 
-export interface LoadResult {
-  state: PersistedState;
-  recovered?: string; // message when saved data could not be read
-  fresh: boolean;
+/* ------------------------------------------------------------------ tab-scoped sessions
+ *
+ * Personal teaching data (rosters, selected class/workspace, layouts, notes, points, timers…)
+ * belongs to ONE browser tab session:
+ *  - The session id lives in sessionStorage, which survives a normal refresh of that tab and is
+ *    discarded when the tab is closed. A brand-new visit therefore has no id and starts fresh.
+ *  - The data itself is written to IndexedDB under that id (sessionStorage is too small for
+ *    uploaded pictures). Session records left behind by closed tabs are never loaded by a new
+ *    visit, and are deleted after SESSION_MAX_IDLE_MS of inactivity.
+ *  - Browsers can bring a closed tab back (Ctrl+Shift+T, "continue where you left off") together
+ *    with its sessionStorage. A restored session is accepted only if it was active within
+ *    SESSION_MAX_IDLE_MS; older ones start fresh. A duplicated tab gets its own copy.
+ *
+ * Data saved by earlier versions ("sidekick-state") is never read automatically, never changed
+ * and never deleted except through the explicit buttons in Settings → Data.
+ */
+const SID_KEY = "sidekick-session-id";
+const RECLAIM_KEY = "sidekick-reclaim";
+const SESSION_PREFIX = "sk-session:";
+const META_PREFIX = "sk-meta:";
+/** A session idle for longer than this (e.g. restored the next day) starts fresh instead. */
+export const SESSION_MAX_IDLE_MS = 12 * 60 * 60 * 1000;
+export const LEGACY_KEY = KEY;
+
+let sid: string | null = null;
+export const currentSessionId = () => sid;
+
+function readSid(): string | null {
+  try {
+    return sessionStorage.getItem(SID_KEY);
+  } catch {
+    return null;
+  }
+}
+function writeSid(v: string | null) {
+  try {
+    if (v) sessionStorage.setItem(SID_KEY, v);
+    else sessionStorage.removeItem(SID_KEY);
+  } catch {
+    /* storage blocked: the session lives only in memory */
+  }
+}
+const newSid = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+
+/** Ask other open windows whether they are using this session right now (duplicated tab). */
+function sessionInUseElsewhere(id: string, waitMs = 250): Promise<boolean> {
+  if (typeof BroadcastChannel === "undefined") return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const ch = new BroadcastChannel("sidekick-sessions");
+    const done = (v: boolean) => {
+      ch.close();
+      resolve(v);
+    };
+    const t = setTimeout(() => done(false), waitMs);
+    ch.onmessage = (e: MessageEvent<{ type: string; sid: string }>) => {
+      if (e.data?.type === "alive" && e.data.sid === id) {
+        clearTimeout(t);
+        done(true);
+      }
+    };
+    ch.postMessage({ type: "probe", sid: id });
+  });
 }
 
-export async function loadState(): Promise<LoadResult> {
-  let raw: unknown;
-  try {
-    raw = await get(KEY, store());
-  } catch (e) {
-    return { state: createDefaultState(), fresh: true, recovered: `Storage is unavailable (${(e as Error).message}). Changes won't be saved.` };
+/** Answer "is anyone using session X?" for as long as this page is open. */
+export function answerSessionProbes(): () => void {
+  if (typeof BroadcastChannel === "undefined") return () => {};
+  const ch = new BroadcastChannel("sidekick-sessions");
+  ch.onmessage = (e: MessageEvent<{ type: string; sid: string }>) => {
+    if (e.data?.type === "probe" && sid && e.data.sid === sid) ch.postMessage({ type: "alive", sid });
+  };
+  return () => ch.close();
+}
+
+export interface LoadResult {
+  /** null = no session for this tab yet: show the workspace chooser. */
+  state: PersistedState | null;
+  recovered?: string;
+  /** Why we started fresh, for tests and diagnostics. */
+  reason: "restored" | "new-visit" | "expired" | "duplicated" | "handoff" | "unreadable";
+}
+
+/** Find (or fork) this tab's session. Never touches legacy data. */
+export async function loadState(now = Date.now()): Promise<LoadResult> {
+  const url = new URL(window.location.href);
+  const handoff = url.searchParams.get("session");
+  if (handoff) {
+    // A pop-out window continues the session of the window that opened it.
+    url.searchParams.delete("session");
+    window.history.replaceState(null, "", url.toString());
+    writeSid(handoff);
   }
-  if (raw === undefined) {
-    const state = ensureAllRequired(createDefaultState());
-    const prefs = readLocalPrefs();
-    if (prefs) state.prefs = { ...state.prefs, ...prefs };
-    return { state, fresh: true };
+  let reclaim = false;
+  try {
+    reclaim = sessionStorage.getItem(RECLAIM_KEY) === "1";
+    sessionStorage.removeItem(RECLAIM_KEY);
+  } catch {
+    /* ignore */
+  }
+  let id = readSid();
+  let reason: LoadResult["reason"] = handoff ? "handoff" : "restored";
+  void cleanupOldSessions(now, id);
+  if (!id) return { state: null, reason: "new-visit" };
+
+  let record: PersistedState | undefined;
+  let savedAt: number | undefined;
+  try {
+    [record, savedAt] = await Promise.all([get<PersistedState>(SESSION_PREFIX + id, store()), get<number>(META_PREFIX + id, store())]);
+  } catch (e) {
+    return { state: null, reason: "unreadable", recovered: `Storage is unavailable (${(e as Error).message}). Changes won't be saved.` };
+  }
+  if (!record || !savedAt || now - savedAt > SESSION_MAX_IDLE_MS) {
+    writeSid(null);
+    if (record) void forgetSession(id);
+    return { state: null, reason: record ? "expired" : "new-visit" };
+  }
+  // A duplicated tab copies sessionStorage: give the copy its own session so the two tabs
+  // can't overwrite each other.
+  if (!handoff && !reclaim && (await sessionInUseElsewhere(id))) {
+    const copy = newSid();
+    await Promise.all([set(SESSION_PREFIX + copy, record, store()), set(META_PREFIX + copy, now, store())]);
+    writeSid(copy);
+    id = copy;
+    reason = "duplicated";
   }
   try {
-    return { state: migrate(raw), fresh: false };
+    const state = migrate(record);
+    sid = id;
+    return { state, reason };
   } catch (e) {
-    // Never destroy data we can't read: keep a backup copy for recovery.
-    try {
-      await set(`${KEY}-backup-${Date.now()}`, raw, store());
-    } catch {
-      /* ignore */
-    }
-    return {
-      state: createDefaultState(),
-      fresh: true,
-      recovered: `Saved data couldn't be loaded (${(e as Error).message}). A backup copy was kept on this device.`,
-    };
+    writeSid(null);
+    return { state: null, reason: "unreadable", recovered: `This session couldn't be loaded (${(e as Error).message}). Starting fresh.` };
+  }
+}
+
+/** Begin a new session for this tab (after a preset is chosen) and save it. */
+export async function startSession(state: PersistedState): Promise<string> {
+  sid = newSid();
+  writeSid(sid);
+  await saveState(state);
+  return sid;
+}
+
+/** End this tab's session: its data is deleted and the next load shows the chooser. */
+export async function endSession(): Promise<void> {
+  const id = sid ?? readSid();
+  sid = null;
+  writeSid(null);
+  if (id) await forgetSession(id);
+}
+
+/** The next load of this tab takes the session back from another window (pop-out). */
+export function markReclaim() {
+  try {
+    sessionStorage.setItem(RECLAIM_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+async function forgetSession(id: string) {
+  try {
+    await delMany([SESSION_PREFIX + id, META_PREFIX + id], store());
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Delete session records that have been idle too long (closed tabs). Legacy data is untouched. */
+export async function cleanupOldSessions(now = Date.now(), keep: string | null = null) {
+  try {
+    const all = (await keys<string>(store())).filter((k) => typeof k === "string" && k.startsWith(META_PREFIX));
+    if (!all.length) return;
+    const stamps = await getMany<number>(all, store());
+    const stale = all.filter((k, i) => k.slice(META_PREFIX.length) !== keep && now - (stamps[i] ?? 0) > SESSION_MAX_IDLE_MS).map((k) => k.slice(META_PREFIX.length));
+    if (stale.length) await delMany(stale.flatMap((id) => [SESSION_PREFIX + id, META_PREFIX + id]), store());
+  } catch {
+    /* best effort */
   }
 }
 
 export async function saveState(s: PersistedState): Promise<void> {
-  const payload = applyRetention(pickPersisted(s));
-  await set(KEY, payload, store());
   writeLocalPrefs(s);
+  if (!sid) return; // nothing personal is saved before a workspace is chosen
+  const payload = applyRetention(pickPersisted(s));
+  await Promise.all([set(SESSION_PREFIX + sid, payload, store()), set(META_PREFIX + sid, Date.now(), store())]);
 }
+
+/* ------------------------------------------------------------------ legacy data (before sessions) */
+
+export async function hasLegacyData(): Promise<boolean> {
+  try {
+    return (await get(LEGACY_KEY, store())) !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+/** Explicit, teacher-chosen: read the data saved by earlier versions into this session. */
+export async function loadLegacyData(): Promise<PersistedState | null> {
+  const raw = await get(LEGACY_KEY, store());
+  return raw === undefined ? null : migrate(raw);
+}
+
+/** Explicit, teacher-chosen and confirmed: remove the data saved by earlier versions. */
+export async function deleteLegacyData(): Promise<void> {
+  await del(LEGACY_KEY, store());
+}
+
+/* ------------------------------------------------------------------ device preferences */
+
+/** Theme, sound and layout choices are device settings (not personal data) and carry over. */
+const DEVICE_PREFS = [
+  "themeId", "reducedMotion", "dockPosition", "navStyle", "volume", "muted", "shortcutsEnabled", "sideBySideTipDismissed", "walkthroughDone",
+] as const;
 
 function writeLocalPrefs(s: PersistedState) {
   try {
-    localStorage.setItem(
-      PREFS_KEY,
-      JSON.stringify({ themeId: s.prefs.themeId, reducedMotion: s.prefs.reducedMotion, dockPosition: s.prefs.dockPosition, navStyle: s.prefs.navStyle }),
-    );
+    const out: Record<string, unknown> = {};
+    for (const k of DEVICE_PREFS) out[k] = s.prefs[k as keyof typeof s.prefs];
+    localStorage.setItem(PREFS_KEY, JSON.stringify(out));
   } catch {
     /* private mode etc. */
   }
@@ -128,7 +301,11 @@ function writeLocalPrefs(s: PersistedState) {
 export function readLocalPrefs(): Partial<PersistedState["prefs"]> | null {
   try {
     const v = localStorage.getItem(PREFS_KEY);
-    return v ? JSON.parse(v) : null;
+    if (!v) return null;
+    const raw = JSON.parse(v) as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const k of DEVICE_PREFS) if (k in raw) out[k] = raw[k];
+    return out as Partial<PersistedState["prefs"]>;
   } catch {
     return null;
   }

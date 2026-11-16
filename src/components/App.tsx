@@ -1,7 +1,10 @@
 "use client";
 import { useEffect } from "react";
 import { useSidekick, persistedSnapshot } from "@/store/store";
-import { loadState } from "@/store/persist";
+import { answerSessionProbes, currentSessionId, loadState, markReclaim, readLocalPrefs, startSession } from "@/store/persist";
+import { createDefaultState } from "@/store/defaults";
+import { ensureAllRequired } from "@/store/workspaceLogic";
+import { WorkspaceChooser, Walkthrough } from "./WorkspaceChooser";
 import { flush, markDirty, pauseSaving } from "@/store/autosave";
 import { useSingleWindow } from "./engines/SingleWindow";
 import { applyTheme } from "@/lib/themes";
@@ -21,19 +24,40 @@ export default function App() {
   const volume = useSidekick((s) => s.prefs.volume);
   const muted = useSidekick((s) => s.prefs.muted);
   const reduced = useReducedMotion();
-  const otherWindow = useSingleWindow(hydrated, pauseSaving);
+  const chooser = useSidekick((s) => s.chooser);
+  const otherWindow = useSingleWindow(hydrated && chooser !== "welcome", pauseSaving);
 
   // Load saved data once.
   useEffect(() => {
     let cancelled = false;
-    void loadState().then(({ state, recovered }) => {
+    void loadState().then(async ({ state, recovered }) => {
       if (cancelled) return;
-      const now = Date.now();
-      // Timers that ran out while the app was closed are marked done — never restarted.
-      for (const [id, w] of Object.entries(state.widgets)) {
-        if (w.type === "timer" && state.sessions[id]) state.sessions[id] = onRestore(state.sessions[id] as TimerSession, now);
+      const st = useSidekick.getState();
+      if (state) {
+        // Same tab, refreshed: continue this teaching session.
+        const now = Date.now();
+        // Timers that ran out while the page was away are marked done — never restarted.
+        for (const [id, w] of Object.entries(state.widgets)) {
+          if (w.type === "timer" && state.sessions[id]) state.sessions[id] = onRestore(state.sessions[id] as TimerSession, now);
+        }
+        st.hydrate(state, recovered ?? null);
+      } else {
+        // A new visit: nothing personal is loaded. Show the workspace chooser.
+        const base = createDefaultState();
+        base.prefs = { ...base.prefs, ...(readLocalPrefs() ?? {}) };
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("start") === "sample") {
+          // Sample workspace for automated tests and demos (no personal data).
+          url.searchParams.delete("start");
+          window.history.replaceState(null, "", url.toString());
+          const sample = ensureAllRequired(base);
+          st.hydrate(sample, recovered ?? null);
+          await startSession(sample);
+        } else {
+          st.hydrate(base, recovered ?? null);
+          st.openChooser("welcome");
+        }
       }
-      useSidekick.getState().hydrate(state, recovered ?? null);
       if (recovered) useSidekick.getState().toast({ message: recovered, tone: "warn", timeout: 12000 });
     });
     return () => {
@@ -57,10 +81,19 @@ export default function App() {
     const onHide = () => {
       if (document.visibilityState === "hidden") void flush();
     };
+    // Keep this tab's session marked as active (sessions idle for 12 hours start fresh).
+    const beat = setInterval(() => {
+      if (document.visibilityState === "visible" && currentSessionId()) {
+        markDirty();
+      }
+    }, 5 * 60 * 1000);
+    const stopProbes = answerSessionProbes();
     document.addEventListener("visibilitychange", onHide);
     window.addEventListener("pagehide", onHide);
     return () => {
       unsub();
+      clearInterval(beat);
+      stopProbes();
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", onHide);
     };
@@ -79,10 +112,13 @@ export default function App() {
       </div>
     );
   }
+  if (chooser === "welcome") return <WorkspaceChooser mode="welcome" />;
   return (
     <>
       {otherWindow && <PausedOverlay />}
       <AppShell />
+      {chooser === "switch" && <WorkspaceChooser mode="switch" />}
+      <Walkthrough />
       <TimerEngine />
       <ReminderEngine />
       <Shortcuts />
@@ -100,7 +136,12 @@ function PausedOverlay() {
         <p className="text-4xl" aria-hidden>🪟</p>
         <h2 id="paused-title" className="text-lg font-black">Sidekick is open in another window</h2>
         <p className="text-sm text-ink-soft">To keep your changes from mixing up, this window is paused. You can close it, or switch back to using Sidekick here.</p>
-        <button type="button" onClick={() => window.location.reload()} className="min-h-11 rounded-xl bg-brand px-4 font-bold text-brand-ink">
+        <button
+          type="button"
+          onClick={() => {
+            markReclaim();
+            window.location.reload();
+          }} className="min-h-11 rounded-xl bg-brand px-4 font-bold text-brand-ink">
           Use Sidekick here instead
         </button>
       </div>

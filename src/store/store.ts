@@ -37,7 +37,9 @@ import {
   switchTo,
   useSharedForClass,
   type NewWorkspaceChoice,
+  openPreset,
 } from "./workspaceLogic";
+import type { PresetKind } from "./presets";
 
 /* ------------------------------------------------------------------ UI-only state */
 
@@ -80,6 +82,10 @@ interface UIState {
   flashWidgetId: string | null;
   /** Shown after switching classes: keep / last-used / choose a workspace. */
   classSwitchPrompt: { classId: string; lastWorkspaceId: string | null } | null;
+  /** The workspace chooser: "welcome" on a new visit (nothing loaded yet), "switch" during a session. */
+  chooser: "welcome" | "switch" | null;
+  /** The optional first-use walkthrough is showing. */
+  walkthrough: boolean;
 }
 
 /* ------------------------------------------------------------------ helpers */
@@ -129,6 +135,11 @@ interface Actions {
   /** Change the active class; `prompt` asks which workspace to use next (when there's a choice). */
   setActiveClass(id: string | null, opts?: { prompt?: boolean }): void;
   closeClassSwitchPrompt(): void;
+  openChooser(mode: "welcome" | "switch"): void;
+  closeChooser(): void;
+  /** From the chooser during a session: open (or create) the preset's workspace. */
+  openPresetWorkspace(kind: PresetKind): void;
+  setWalkthrough(open: boolean): void;
   setClassDefaultWorkspace(classId: string, workspaceId: string | null): void;
   addStudents(classId: string, names: string[]): ImportResult;
   renameStudent(classId: string, studentId: string, name: string): boolean;
@@ -224,6 +235,8 @@ const initialUI: UIState = {
   lastTimerId: null,
   flashWidgetId: null,
   classSwitchPrompt: null,
+  chooser: null,
+  walkthrough: false,
 };
 
 const UNDO_LIMIT = 30;
@@ -406,6 +419,20 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     },
     closeClassSwitchPrompt() {
       set({ classSwitchPrompt: null });
+    },
+    openChooser(mode) {
+      set({ chooser: mode, expandedWidgetId: null });
+    },
+    closeChooser() {
+      set({ chooser: null });
+    },
+    openPresetWorkspace(kind) {
+      apply((st) => openPreset(st, kind).state);
+      set({ chooser: null, expandedWidgetId: null, classSwitchPrompt: null });
+    },
+    setWalkthrough(open) {
+      set({ walkthrough: open });
+      if (!open) get().setPrefs({ walkthroughDone: true });
     },
     setClassDefaultWorkspace(classId, workspaceId) {
       mutateClass(classId, (c) => ({ ...c, defaultWorkspaceId: workspaceId }));

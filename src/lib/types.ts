@@ -79,6 +79,8 @@ export interface Preferences {
   shortcutRoutineId: string | null;
   /** The “keep Sidekick beside your lesson” guide was dismissed. */
   sideBySideTipDismissed: boolean;
+  /** The optional first-use walkthrough was finished or skipped. */
+  walkthroughDone?: boolean;
 }
 
 export interface Student {
@@ -110,7 +112,17 @@ export interface LayoutPos {
 }
 
 /** What a teaching workspace is for (from its template). Whole Group is the only kind without a required Voice Level. */
-export type WorkspaceKind = "wholeGroup" | "centers" | "smallGroup" | "assessment" | "management" | "daily" | "custom";
+export type WorkspaceKind =
+  | "bryan"
+  | "wholeGroup"
+  | "centers"
+  | "testing"
+  | "smallGroup"
+  | "management"
+  | "daily"
+  | "custom"
+  /** Legacy (earlier "Assessment & Review" template). */
+  | "assessment";
 
 export interface Workspace {
   id: string;

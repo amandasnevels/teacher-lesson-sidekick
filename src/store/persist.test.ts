@@ -1,14 +1,45 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { set, createStore } from "idb-keyval";
-import { loadState, saveState, applyRetention } from "./persist";
+import { createStore, get, keys, set } from "idb-keyval";
+import {
+  SESSION_MAX_IDLE_MS,
+  answerSessionProbes,
+  applyRetention,
+  currentSessionId,
+  endSession,
+  hasLegacyData,
+  loadLegacyData,
+  loadState,
+  saveState,
+  startSession,
+} from "./persist";
+import { WORKSPACE_PRESETS } from "./presets";
+import { freshSession } from "./workspaceLogic";
 import { persistedSnapshot } from "./store";
 import { add, addClassWith, resetStore, S } from "@/test-utils";
 import { buildSettingsPack, importSettingsPack } from "@/lib/exportPack";
 
 beforeEach(() => resetStore());
 
-describe("persistence", () => {
-  it("restores widget order, options and records after a 'refresh'", async () => {
+describe("tab-scoped sessions", () => {
+  const db = () => createStore("teacher-lesson-sidekick", "kv");
+  beforeEach(async () => {
+    await endSession();
+    sessionStorage.clear();
+  });
+
+  it("a new visit loads nothing personal; legacy data is never read or changed", async () => {
+    const legacy = { ...persistedSnapshot(), classes: [{ id: "c", name: "Old class", students: [{ id: "s", name: "Avery Brook" }], groups: [] }] };
+    await set("sidekick-state", legacy, db());
+    const r = await loadState();
+    expect(r.state).toBeNull();
+    expect(r.reason).toBe("new-visit");
+    expect(await get("sidekick-state", db())).toEqual(legacy); // untouched
+    expect(await hasLegacyData()).toBe(true);
+    // Only an explicit restore brings it back.
+    expect((await loadLegacyData())!.classes[0].students[0].name).toBe("Avery Brook");
+  });
+
+  it("restores widget order, options and records after a refresh of the same tab", async () => {
     const a = add("timer");
     const b = add("spinner");
     const c = add("choice");
@@ -16,15 +47,47 @@ describe("persistence", () => {
     S().updateConfig(b, { options: [{ id: "1", label: "Alpha" }, { id: "2", label: "Beta" }, { id: "3", label: "Gamma" }] });
     const cls = addClassWith("P1", ["Ana"]);
     S().addPoints(cls, { kind: "class", id: cls }, 7);
+    await startSession(persistedSnapshot());
     await saveState(persistedSnapshot());
 
-    resetStore(); // simulate a fresh page
-    const { state } = await loadState();
+    resetStore(); // simulate the refresh
+    const { state, reason } = await loadState();
+    expect(reason).toBe("restored");
     // Order kept; the required CHAMPS + Voice Level are added in front (never reordering the rest).
-    expect(state.workspaces[0].widgetIds.slice(-3)).toEqual([c, a, b]);
-    expect(state.workspaces[0].widgetIds.map((id) => state.widgets[id].type).slice(0, 2).sort()).toEqual(["champs", "voice"]);
-    expect(state.widgets[b].config.options).toHaveLength(3);
-    expect(state.records.points[cls].whole).toBe(7);
+    expect(state!.workspaces[0].widgetIds.slice(-3)).toEqual([c, a, b]);
+    expect(state!.workspaces[0].widgetIds.map((id) => state!.widgets[id].type).slice(0, 2).sort()).toEqual(["champs", "voice"]);
+    expect(state!.widgets[b].config.options).toHaveLength(3);
+    expect(state!.records.points[cls].whole).toBe(7);
+  });
+
+  it("closing the tab (sessionStorage gone) starts fresh; a session idle for 12 hours expires", async () => {
+    addClassWith("P1", ["Ana"]);
+    await startSession(persistedSnapshot());
+    sessionStorage.clear(); // tab closed
+    expect((await loadState()).state).toBeNull();
+
+    await startSession(persistedSnapshot());
+    const later = Date.now() + SESSION_MAX_IDLE_MS + 60_000; // e.g. restored the next day
+    const r = await loadState(later);
+    expect(r).toMatchObject({ state: null, reason: "expired" });
+  });
+
+  it("a duplicated tab gets its own copy of the session", async () => {
+    addClassWith("P1", ["Ana"]);
+    const first = await startSession(persistedSnapshot());
+    const stop = answerSessionProbes(); // the original tab is still open
+    const r = await loadState();
+    stop();
+    expect(r.reason).toBe("duplicated");
+    expect(r.state!.classes[0].name).toBe("P1");
+    expect(currentSessionId()).not.toBe(first);
+  });
+
+  it("nothing personal is saved before a workspace is chosen", async () => {
+    const before = (await keys(db())).map(String).sort();
+    addClassWith("P1", ["Ana Secret"]);
+    await saveState(persistedSnapshot()); // no session yet
+    expect((await keys(db())).map(String).sort()).toEqual(before);
   });
 
   it("session-only retention never writes student names", () => {
@@ -35,11 +98,43 @@ describe("persistence", () => {
     expect(out.classes[0].name).toBe("P1");
   });
 
-  it("keeps a backup and starts fresh when saved data is unreadable", async () => {
-    await set("sidekick-state", { version: 999 }, createStore("teacher-lesson-sidekick", "kv"));
+  it("unreadable session data starts fresh", async () => {
+    await startSession(persistedSnapshot());
+    await set(`sk-session:${currentSessionId()}`, { version: 999 }, db());
     const r = await loadState();
-    expect(r.recovered).toMatch(/backup/);
-    expect(r.state.workspaces.length).toBeGreaterThan(0);
+    expect(r.state).toBeNull();
+    expect(r.recovered).toMatch(/Starting fresh/);
+  });
+});
+
+describe("eight presets", () => {
+  it("fresh sessions contain only the chosen preset, with its widgets in order and required ones", () => {
+    for (const p of WORKSPACE_PRESETS) {
+      const s = freshSession(p.kind);
+      expect(s.classes).toEqual([]);
+      expect(s.workspaces).toHaveLength(1);
+      const types = s.workspaces[0].widgetIds.map((id) => s.widgets[id].type);
+      expect(types.filter((t) => t === "champs")).toHaveLength(1);
+      expect(types.filter((t) => t === "voice")).toHaveLength(p.kind === "wholeGroup" ? 0 : 1);
+      // Preset order is kept exactly (required widgets were already listed).
+      expect(types).toEqual(p.widgets.map((w) => w.type));
+    }
+  });
+  it("preset settings: Bryan ISD, Testing, Stations", () => {
+    const bryan = freshSession("bryan");
+    const b = bryan.workspaces[0].widgetIds.map((id) => bryan.widgets[id]);
+    expect(b.map((w) => w.type)).toEqual(["clock", "timer", "ican", "iwill", "champs", "hallpass", "picker", "voice"]);
+    expect(b[0].config.showDate).toBe(true);
+    expect(b[1].config.durationSec).toBe(300);
+    expect(b[5].title).toBe("Check Out");
+    const t = freshSession("testing");
+    const tw = t.workspaces[0].widgetIds.map((id) => t.widgets[id]);
+    expect(tw.find((w) => w.type === "status")!.config.current).toBe("Testing");
+    expect(tw.find((w) => w.type === "voice")!.config).toMatchObject({ level: "silent", alertOn: false });
+    expect(tw.find((w) => w.type === "timer")!.config.soundOn).toBe(false);
+    const c = freshSession("centers");
+    const timer = c.workspaces[0].widgetIds.map((id) => c.widgets[id]).find((w) => w.type === "timer")!;
+    expect(timer.config).toMatchObject({ durationSec: 900, stations: { enabled: true } });
   });
 });
 

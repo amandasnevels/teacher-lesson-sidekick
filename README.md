@@ -51,6 +51,31 @@ If Playwright's browser isn't installed on your machine, run `npx playwright ins
 Keyboard shortcuts (toggle in Settings → More options): `Ctrl/⌘+K` Quick Find · `Alt+Shift+T` start/pause focused
 timer · `Alt+Shift+P` pick student · `Alt+Shift+A` widget library · `Alt+Shift+Z` undo · `Alt+Shift+R` run selected routine.
 
+## Sessions and saved data
+
+Every new visit opens the **workspace chooser** (eight built-in presets in `src/store/presets.ts`).
+Nothing personal is loaded until a preset is chosen, and nothing personal is saved before then.
+
+- **Teaching data belongs to one browser tab.** Classes, rosters, layouts, notes, points,
+  participation, timers, Quick Dock and class customizations are saved under a session id kept in
+  that tab's `sessionStorage`. A normal refresh restores the session. A new tab or a new visit
+  starts fresh.
+- **Device preferences carry over** (theme, sound, dock position, walkthrough seen) in `localStorage`.
+- **Pop-out window** ("Open in its own window") continues the same session; the original window pauses.
+- **Duplicated tab**: browsers copy `sessionStorage`, so the copy detects the original (BroadcastChannel)
+  and continues with its *own copy* of the session; the two never overwrite each other.
+- **Browser limits:** browsers can bring a closed tab back with its `sessionStorage`
+  (Ctrl/Cmd+Shift+T, or "continue where you left off" after a restart). Such a session is restored
+  only if it was used in the last **12 hours**; older ones start fresh and their data is deleted.
+  Session records from closed tabs stay in IndexedDB on the device until they are 12 hours idle,
+  then they are deleted on the next visit. They are never loaded by another tab.
+  **End session & start fresh** (tap the logo) deletes the current session immediately — use it
+  on shared computers.
+- **Data from earlier versions** (`sidekick-state` in IndexedDB) is never loaded, changed or deleted
+  automatically. Settings → Data & Privacy offers "Bring it into this session" and, separately,
+  "Delete it from this device" (both confirmed).
+- Automated tests start from a sample workspace with `/?start=sample` (no personal data).
+
 ## Deploying to Vercel (when you're ready)
 
 This is a standard Next.js app with no server-side data or secrets, so it deploys with defaults.

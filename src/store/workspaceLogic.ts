@@ -9,34 +9,17 @@
  *
  * Everything here is a pure function of the persisted state, so it is easy to test.
  */
-import type { DockItem, PersistedState, WidgetInstance, WidgetType, Workspace, WorkspaceKind } from "@/lib/types";
+import type { DockItem, PersistedState, WidgetInstance, WidgetType, Workspace } from "@/lib/types";
 import { clone } from "@/lib/clone";
 import { uid } from "@/lib/ids";
 import { pause, type TimerSession } from "@/widgets/timer/timerLogic";
-import { makeInstance } from "./defaults";
+import { createDefaultState, makeInstance } from "./defaults";
 
-type WidgetSeed = { type: WidgetType; config?: Record<string, unknown> };
+import { WORKSPACE_PRESETS, type PresetKind, type WorkspacePreset } from "./presets";
 
-export interface WorkspaceTemplate {
-  kind: Exclude<WorkspaceKind, "custom">;
-  name: string;
-  emoji: string;
-  widgets: WidgetSeed[];
-}
-
-const stationTimer: WidgetSeed = {
-  type: "timer",
-  config: { durationSec: 900, stations: { enabled: true, names: ["Station 1", "Station 2", "Station 3", "Teacher Table"] } },
-};
-
-export const WORKSPACE_TEMPLATES: WorkspaceTemplate[] = [
-  { kind: "wholeGroup", name: "Whole Group", emoji: "🧑‍🏫", widgets: [{ type: "champs" }, { type: "timer" }, { type: "clock" }, { type: "picker" }, { type: "soundboard" }] },
-  { kind: "centers", name: "Centers & Stations", emoji: "🧩", widgets: [{ type: "champs" }, { type: "voice" }, stationTimer, { type: "groups" }, { type: "spinner" }, { type: "checklist" }] },
-  { kind: "smallGroup", name: "Small Group", emoji: "👥", widgets: [{ type: "champs" }, { type: "voice" }, { type: "timer" }, { type: "groups" }, { type: "participation" }, { type: "notes" }] },
-  { kind: "assessment", name: "Assessment & Review", emoji: "📝", widgets: [{ type: "champs" }, { type: "voice" }, { type: "timer" }, { type: "quiz" }, { type: "tally" }, { type: "checklist" }] },
-  { kind: "management", name: "Classroom Management", emoji: "🧭", widgets: [{ type: "champs" }, { type: "voice" }, { type: "status" }, { type: "cues" }, { type: "reward" }, { type: "soundboard" }] },
-  { kind: "daily", name: "Daily Organization", emoji: "🗓️", widgets: [{ type: "champs" }, { type: "voice" }, { type: "clock" }, { type: "schedule" }, { type: "reminders" }, { type: "hallpass" }, { type: "checklist" }] },
-];
+/** The built-in presets double as the "+ New workspace" templates. */
+export const WORKSPACE_TEMPLATES: WorkspacePreset[] = WORKSPACE_PRESETS;
+export type WorkspaceTemplate = WorkspacePreset;
 
 /* ------------------------------------------------------------------ lookups */
 
@@ -164,7 +147,7 @@ function copyWidgets(s: PersistedState, src: Workspace, newWsId: string) {
 }
 
 export type NewWorkspaceChoice =
-  | { mode: "template"; kind: WorkspaceTemplate["kind"]; name: string }
+  | { mode: "template"; kind: PresetKind; name: string }
   | { mode: "duplicate"; fromId: string; name: string }
   | { mode: "blank"; name: string };
 
@@ -179,7 +162,7 @@ export function createWorkspace(s: PersistedState, choice: NewWorkspaceChoice): 
     ws = { ...ws, kind: t.kind };
     widgets = { ...s.widgets };
     for (const seed of t.widgets) {
-      const inst = makeInstance(seed.type, id, seed.config ? { config: seed.config } : {});
+      const inst = makeInstance(seed.type, id, { ...(seed.config ? { config: seed.config } : {}), ...(seed.title ? { title: seed.title } : {}) });
       widgets[inst.id] = inst;
       ws.widgetIds.push(inst.id);
     }
@@ -260,4 +243,33 @@ export function changeClass(s: PersistedState, classId: string | null): Persiste
   // Switching away from the old class's customization: don't record it as the new class's last-used.
   const switched = switchTo({ ...next, activeClassId: null }, target);
   return { ...switched, activeClassId: classId };
+}
+
+/* ------------------------------------------------------------------ fresh sessions */
+
+/**
+ * A brand-new teaching session containing only the chosen preset: no classes, students, notes or
+ * records. Device preferences (theme, sound) are kept. Starter routines and Quick Dock actions are
+ * product defaults, not personal data.
+ */
+export function freshSession(kind: PresetKind, prefs?: Partial<PersistedState["prefs"]>): PersistedState {
+  const base = createDefaultState();
+  const preset = WORKSPACE_PRESETS.find((p) => p.kind === kind) ?? WORKSPACE_PRESETS[WORKSPACE_PRESETS.length - 1];
+  const empty: PersistedState = {
+    ...base,
+    prefs: { ...base.prefs, ...(prefs ?? {}) },
+    workspaces: [],
+    widgets: {},
+    activeWorkspaceId: "",
+    dock: base.dock.filter((d) => d.kind !== "widget"),
+  };
+  return createWorkspace(empty, { mode: "template", kind: preset.kind, name: preset.name }).state;
+}
+
+/** During a session: open the workspace made from this preset, or make it (never duplicates). */
+export function openPreset(s: PersistedState, kind: PresetKind): { state: PersistedState; id: string } {
+  const existing = s.workspaces.find((w) => isShared(w) && w.kind === kind);
+  if (existing) return { state: switchTo(s, effectiveId(s, existing.id, s.activeClassId)), id: existing.id };
+  const preset = WORKSPACE_PRESETS.find((p) => p.kind === kind)!;
+  return createWorkspace(s, { mode: "template", kind, name: preset.name });
 }

@@ -33,14 +33,22 @@ export function Header() {
       <div className="flex items-center gap-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <h1 className="m-0 min-w-0 leading-none">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/brand/teacher-sidekick-logo-wide.webp"
-              alt="Teacher Sidekick by NevelLabs"
-              width={798}
-              height={160}
-              className="brand-logo block h-11 w-auto sm:h-12 max-w-full object-contain object-left"
-            />
+            <button
+              type="button"
+              onClick={() => s().openChooser("switch")}
+              aria-label="Teacher Sidekick by NevelLabs — open the workspace chooser"
+              title="Workspace presets"
+              className="block max-w-full rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/teacher-sidekick-logo-wide.webp"
+                alt=""
+                width={798}
+                height={160}
+                className="brand-logo block h-11 w-auto max-w-full object-contain object-left sm:h-12"
+              />
+            </button>
           </h1>
         </div>
         <IconButton label="Quick Find (Ctrl+K)" onClick={() => s().setQuickFind(true)} variant="outline">

@@ -1,10 +1,11 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isShared, sharedIdOf } from "@/store/workspaceLogic";
 import { NewWorkspaceDialog } from "./WorkspaceDialogs";
 import { ArrowDown, ArrowUp, Copy, Download, Pencil, Play, Plus, Trash2, Upload, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { persistedSnapshot, useSidekick, type SettingsTab } from "@/store/store";
+import { deleteLegacyData, hasLegacyData, loadLegacyData } from "@/store/persist";
 import { DOCK_ACTIONS, dockItemInfo, runRoutine } from "@/store/actions";
 import { THEMES } from "@/lib/themes";
 import { buildSettingsPack, importSettingsPack } from "@/lib/exportPack";
@@ -348,6 +349,7 @@ function DataTab() {
           <input ref={fileRef} type="file" accept="application/json,.json" className="sr-only" aria-label="Settings pack file" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void importPack(f); }} />
         </div>
       </section>
+      <LegacyDataSection />
       <section className="space-y-1">
         <h3 className="font-extrabold">Cross-device sync (not active yet)</h3>
         <p className="text-sm text-ink-soft">Choose what you would like to sync once sign-in is available. Nothing syncs today. Class records will only sync after secure, school-approved storage exists.</p>
@@ -359,5 +361,59 @@ function DataTab() {
         <p className="text-xs text-ink-soft">🔒 Class records: always off until approved.</p>
       </section>
     </div>
+  );
+}
+
+/**
+ * Data saved by Sidekick before session-only storage. Never loaded or removed automatically:
+ * the teacher chooses to bring it into this session, or to delete it (with confirmation).
+ */
+function LegacyDataSection() {
+  const [has, setHas] = useState<boolean | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [confirmEl, ask] = useConfirm();
+  useEffect(() => {
+    void hasLegacyData().then(setHas);
+  }, []);
+  return (
+    <section className="space-y-2" data-testid="legacy-data">
+      {confirmEl}
+      <h3 className="font-extrabold">This teaching session</h3>
+      <p className="text-sm text-ink-soft">
+        Your classes, rosters, layouts and records are kept in this browser tab while you teach, even when you refresh. A new visit starts fresh. Use “Export settings pack” above to keep your layouts.
+      </p>
+      {has && (
+        <>
+          <h3 className="pt-1 font-extrabold">Data from an earlier version</h3>
+          <p className="text-sm text-ink-soft">Sidekick saved data on this device before sessions were added. It hasn&rsquo;t been loaded or changed.</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!(await ask("Replace this session with the data saved by the earlier version? Your current session's classes and layouts will be replaced.", "Bring it back"))) return;
+                const old = await loadLegacyData();
+                if (!old) return setMsg("Nothing to restore.");
+                useSidekick.getState().replaceAll({ ...old, prefs: { ...old.prefs, ...useSidekick.getState().prefs } });
+                setMsg("Restored into this session. The original copy is still kept on this device.");
+              }}
+            >
+              <Upload size={16} /> Bring it into this session
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                if (!(await ask("Permanently delete the data saved by the earlier version from this device? This can't be undone.", "Delete it"))) return;
+                await deleteLegacyData();
+                setHas(false);
+                setMsg("The earlier version's data was deleted from this device.");
+              }}
+            >
+              <Trash2 size={14} /> Delete it from this device
+            </Button>
+          </div>
+        </>
+      )}
+      {msg && <p className="text-sm font-semibold" role="status">{msg}</p>}
+    </section>
   );
 }
