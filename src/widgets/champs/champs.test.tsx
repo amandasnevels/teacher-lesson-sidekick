@@ -139,3 +139,40 @@ describe("CHAMPS widget", () => {
     expect(within(screen.getByTestId("champs-row-S")).getByText(TABLE.Assessments[5])).not.toHaveClass("sr-only");
   });
 });
+
+describe("CHAMPS tied to the voice level meter", () => {
+  it("sets the voice level when the activity changes, without fighting manual changes", async () => {
+    const { syncChampsVoice, resetChampsVoiceSync } = await import("@/components/engines/ChampsVoiceSync");
+    resetChampsVoiceSync();
+    const champs = add("champs");
+    const voice = add("voice");
+    S().updateConfig(voice, { level: "presentation" });
+    syncChampsVoice();
+    expect(S().widgets[voice].config.level).toBe("presentation"); // not tied yet
+
+    S().updateConfig(champs, { tieVoice: true, active: "stations" });
+    syncChampsVoice();
+    expect(S().widgets[voice].config.level).toBe("partner"); // Stations: Level 2
+
+    S().updateConfig(voice, { level: "silent" }); // teacher adjusts by hand
+    syncChampsVoice();
+    expect(S().widgets[voice].config.level).toBe("silent");
+
+    S().updateConfig(champs, { active: "transitions" }); // Level 0–1
+    syncChampsVoice();
+    expect(S().widgets[voice].config.level).toBe("whisper");
+
+    S().updateConfig(champs, { tieVoice: false, active: "partner" });
+    syncChampsVoice();
+    expect(S().widgets[voice].config.level).toBe("whisper");
+  });
+
+  it("shows the checkbox and the level it sets", () => {
+    const id = add("champs");
+    add("voice");
+    render(<Champs.Body id={id} view="normal" size="M" />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Tie to voice level meter/ }));
+    expect(S().widgets[id].config.tieVoice).toBe(true);
+    expect(screen.getByTestId("champs-voice-level")).toHaveTextContent("Whisper"); // Whole Group: Level 0–1
+  });
+});

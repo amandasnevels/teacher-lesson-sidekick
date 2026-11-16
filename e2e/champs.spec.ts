@@ -70,3 +70,23 @@ test("CHAMPS: add at 320px, switch to Stations, edit two presets, reload, and ex
   await page.getByRole("button", { name: "Return to workspace" }).click();
   await expect(expanded).toHaveCount(0);
 });
+
+test("CHAMPS tied to the voice level meter sets the voice expectation", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page);
+  await page.getByRole("button", { name: "Add widget", exact: true }).click();
+  await page.getByRole("button", { name: "Add new CHAMPS", exact: true }).click();
+  const champs = widget(page, "champs");
+  const voice = widget(page, "voice"); // already in the default workspace
+  await expect(voice.getByTestId("voice-expectation")).toContainText("Whisper");
+  await champs.getByRole("checkbox", { name: /Tie to voice level meter/ }).check();
+  await champs.getByRole("combobox", { name: "CHAMPS activity" }).selectOption("stations");
+  await expect(voice.getByTestId("voice-expectation")).toContainText("Partner");
+  await expect(champs.getByTestId("champs-voice-level")).toContainText("Partner");
+  await champs.getByRole("combobox", { name: "CHAMPS activity" }).selectOption("assessments");
+  await expect(voice.getByTestId("voice-expectation")).toContainText("Silent");
+  await waitForSave(page);
+  await page.reload();
+  await expect(widget(page, "champs").getByRole("checkbox", { name: /Tie to voice level meter/ })).toBeChecked();
+  await expect(widget(page, "voice").getByTestId("voice-expectation")).toContainText("Silent");
+});

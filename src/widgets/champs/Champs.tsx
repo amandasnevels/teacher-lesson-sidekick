@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { useConfig } from "@/store/hooks";
+import { useSidekick } from "@/store/store";
 import { Button, Field, Toggle, cx, inputCls } from "@/components/ui";
 import type { WidgetModule, WidgetProps } from "../types";
 import {
@@ -19,6 +20,8 @@ import {
   type ChampsPresetId,
 } from "./presets";
 import { ChampsCard } from "./ChampsTile";
+import { voiceLevelForConversation } from "@/lib/voicePoints";
+import { VOICE_LEVELS } from "../voice/Voice";
 
 /** Letter badge colors (white text passes contrast on each). */
 const LETTER_COLORS: Record<ChampsKey, string> = { C: "#c2410c", H: "#1d4ed8", A: "#047857", M: "#6d28d9", P: "#be185d", S: "#0f766e" };
@@ -80,12 +83,39 @@ function Body({ id, view }: WidgetProps) {
           ))}
         </select>
       </label>
+      <TieVoice id={id} />
       <p className="sr-only" data-testid="champs-active" aria-live="polite">
         {presetName(active)}
       </p>
       <ol className="grid grid-cols-2 gap-2 [&>li:last-child]:col-span-2 [&>li:last-child]:mx-auto [&>li:last-child]:w-[calc(50%-0.25rem)]" aria-label={`${presetName(active)} expectations`}>
         {cards(false)}
       </ol>
+    </div>
+  );
+}
+
+/** "Tie to voice level meter" checkbox with the level it sets. */
+function TieVoice({ id }: { id: string }) {
+  const { config, set, expectations } = useChamps(id);
+  const level = voiceLevelForConversation(expectations.C);
+  const hasVoice = useSidekick((s) => {
+    const ws = s.workspaces.find((w) => w.id === s.widgets[id]?.workspaceId);
+    return !!ws?.widgetIds.some((wid) => s.widgets[wid]?.type === "voice");
+  });
+  const v = level ? VOICE_LEVELS[level] : null;
+  return (
+    <div className="space-y-1">
+      <label className="flex min-h-9 cursor-pointer items-center gap-2 text-sm font-bold">
+        <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={!!config?.tieVoice} onChange={(e) => set({ tieVoice: e.target.checked })} />
+        Tie to voice level meter
+        {config?.tieVoice && v && (
+          <span className="ml-auto rounded-full px-2 py-0.5 text-[11px] font-black text-white" style={{ background: v.color }} data-testid="champs-voice-level">
+            {v.emoji} {v.label}
+          </span>
+        )}
+      </label>
+      {config?.tieVoice && !hasVoice && <p className="text-xs text-ink-soft">Add a Voice Level widget to this workspace to link it.</p>}
+      {config?.tieVoice && !level && <p className="text-xs text-ink-soft">This activity’s Conversation details don’t name a level (e.g. “Level 2”).</p>}
     </div>
   );
 }

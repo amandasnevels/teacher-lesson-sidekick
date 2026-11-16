@@ -13,6 +13,7 @@ import { TimerEngine } from "./engines/TimerEngine";
 import { ReminderEngine } from "./engines/ReminderEngine";
 import { Shortcuts } from "./engines/Shortcuts";
 import { HallPassEngine } from "./engines/HallPassEngine";
+import { ChampsVoiceSync } from "./engines/ChampsVoiceSync";
 
 export default function App() {
   const hydrated = useSidekick((s) => s.hydrated);
@@ -86,6 +87,7 @@ export default function App() {
       <ReminderEngine />
       <Shortcuts />
       <HallPassEngine />
+      <ChampsVoiceSync />
     </>
   );
 }

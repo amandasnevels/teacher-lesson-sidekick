@@ -134,6 +134,8 @@ export interface ChampsConfig {
   captions?: Partial<Record<ChampsPresetId, Partial<ChampsExpectations>>>;
   /** Show the full details under each card in the small (sidebar) view. */
   showWords?: boolean;
+  /** Set the Voice Level widget to the activity's conversation level. */
+  tieVoice?: boolean;
 }
 
 export function captionsFor(config: Partial<ChampsConfig> | undefined, id: ChampsPresetId): ChampsExpectations {
