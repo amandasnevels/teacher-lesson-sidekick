@@ -394,13 +394,17 @@ export function Popover({
   );
 }
 
-export function MenuItem({ icon, children, onSelect, danger }: { icon?: ReactNode; children: ReactNode; onSelect: () => void; danger?: boolean }) {
+export function MenuItem({ icon, children, onSelect, danger, disabled, title }: { icon?: ReactNode; children: ReactNode; onSelect: () => void; danger?: boolean; disabled?: boolean; title?: string }) {
   return (
     <button
       type="button"
       role="menuitem"
       onClick={onSelect}
+      disabled={disabled}
+      aria-disabled={disabled || undefined}
+      title={title}
       className={cx(
+        "disabled:cursor-not-allowed disabled:opacity-50",
         "flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-semibold hover:bg-black/5 focus:bg-black/5 focus:outline-none dark:hover:bg-white/10 dark:focus:bg-white/10",
         danger && "text-[#d93036] dark:text-[#ff8a8f]",
       )}

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { isShared, sharedIdOf } from "@/store/workspaceLogic";
 import { Search } from "lucide-react";
 import { useSidekick } from "@/store/store";
 import { parseCommand } from "@/lib/commands";
@@ -52,7 +53,7 @@ export function buildResults(query: string): Result[] {
       out.push({ id: `n-${t}`, kind: "Add new", label: d.name, emoji: d.emoji, run: () => s.flashWidget(s.addWidget(t)) });
   }
   for (const f of s.favorites) if (has(f.name)) out.push({ id: `f-${f.id}`, kind: "Favorite", label: f.name, emoji: DEFINITIONS[f.type].emoji, run: () => { const id = s.addFromFavorite(f.id); if (id) s.flashWidget(id); } });
-  for (const w of s.workspaces) if (has(w.name) && w.id !== s.activeWorkspaceId) out.push({ id: `ws-${w.id}`, kind: "Workspace", label: `Switch to ${w.name}`, emoji: "🗂️", run: () => s.setActiveWorkspace(w.id) });
+  for (const w of s.workspaces.filter(isShared)) if (has(w.name) && w.id !== sharedIdOf(s, s.activeWorkspaceId)) out.push({ id: `ws-${w.id}`, kind: "Workspace", label: `Switch to ${w.name}`, emoji: "🗂️", run: () => s.setActiveWorkspace(w.id) });
   for (const c of s.classes) if (has(c.name) && c.id !== s.activeClassId) out.push({ id: `c-${c.id}`, kind: "Class", label: `Switch to ${c.name}`, emoji: "🧑‍🎓", run: () => s.setActiveClass(c.id) });
   return out.slice(0, 12);
 }

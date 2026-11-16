@@ -15,3 +15,20 @@ export async function widgetOrder(page: Page) {
 export async function waitForSave(page: Page) {
   await page.waitForTimeout(700);
 }
+
+/**
+ * A new Whole Group workspace trimmed down to just its required CHAMPS (Whole Group is the one
+ * kind where Voice Level is optional), so a test can add exactly the widgets it needs.
+ */
+export async function champsOnlyWorkspace(page: Page, name: string) {
+  await page.getByTestId("workspace-select").selectOption("__new");
+  const dlg = page.getByTestId("new-workspace-dialog");
+  await dlg.getByRole("radio", { name: /Whole Group/ }).click();
+  await dlg.getByRole("textbox").fill(name);
+  await page.getByRole("button", { name: "Create", exact: true }).click();
+  for (const t of ["Timer", "Clock", "Name Picker", "Soundboard"]) {
+    await page.getByRole("button", { name: `More options for ${t}` }).click();
+    await page.getByRole("menuitem", { name: "Remove" }).click();
+  }
+  await expect(page.locator("[data-widget-id]")).toHaveCount(1);
+}

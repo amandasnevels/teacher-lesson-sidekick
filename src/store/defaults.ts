@@ -92,8 +92,8 @@ export function starterRoutines(): QuickRoutine[] {
 }
 
 export function createDefaultState(): PersistedState {
-  const main: Workspace = { id: uid("ws"), name: "My Classroom", widgetIds: [] };
-  const centers: Workspace = { id: uid("ws"), name: "Centers", widgetIds: [] };
+  const main: Workspace = { id: uid("ws"), name: "My Classroom", widgetIds: [], kind: "custom" };
+  const centers: Workspace = { id: uid("ws"), name: "Centers", widgetIds: [], kind: "centers" };
   const widgets: Record<string, WidgetInstance> = {};
   const add = (ws: Workspace, type: WidgetType, o: Partial<WidgetInstance> = {}) => {
     const w = makeInstance(type, ws.id, o);
@@ -101,6 +101,7 @@ export function createDefaultState(): PersistedState {
     ws.widgetIds.push(w.id);
     return w;
   };
+  add(main, "champs", { size: "M" });
   add(main, "timer");
   add(main, "picker");
   add(main, "voice");
@@ -109,6 +110,8 @@ export function createDefaultState(): PersistedState {
   add(main, "dice");
   add(main, "clock", { config: { use24h: false, showSeconds: false, showDate: true, style: "compact" } });
 
+  add(centers, "champs", { size: "M" });
+  add(centers, "voice");
   add(centers, "timer", {
     config: { durationSec: 900, stations: { enabled: true, names: ["Reading Nook", "Math Games", "Writing", "Teacher Table"] } },
   });
@@ -119,7 +122,7 @@ export function createDefaultState(): PersistedState {
   add(centers, "soundboard");
 
   const routines = starterRoutines();
-  const timerId = main.widgetIds[0];
+  const timerId = main.widgetIds.find((id) => widgets[id].type === "timer")!;
   const dock: DockItem[] = [
     { id: uid("d"), kind: "action", action: "timer5" },
     { id: uid("d"), kind: "action", action: "pickStudent" },

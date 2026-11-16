@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { isShared, sharedIdOf } from "@/store/workspaceLogic";
 import { FileUp, Plus, Trash2, UserPlus, Users } from "lucide-react";
 import { useSelectValue } from "@/store/hooks";
 import { useSidekick } from "@/store/store";
@@ -20,7 +21,7 @@ export function RosterManager({ compact = false }: { compact?: boolean }) {
   const s = useSidekick.getState;
   const cls = useActiveClass();
   const classes = useSelectValue((st) => st.classes.map((c) => ({ id: c.id, name: c.name })));
-  const workspaces = useSelectValue((st) => st.workspaces.map((w) => ({ id: w.id, name: w.name })));
+  const workspaces = useSelectValue((st) => st.workspaces.filter(isShared).map((w) => ({ id: w.id, name: w.name })));
   const retention = useSidekick((st) => st.prefs.studentDataRetention);
   const [tab, setTab] = useState<"students" | "add" | "groups" | "class">(cls && cls.students.length === 0 ? "add" : "students");
   const [newName, setNewName] = useState("");

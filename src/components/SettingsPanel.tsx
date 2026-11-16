@@ -1,5 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
+import { isShared, sharedIdOf } from "@/store/workspaceLogic";
+import { NewWorkspaceDialog } from "./WorkspaceDialogs";
 import { ArrowDown, ArrowUp, Copy, Download, Pencil, Play, Plus, Trash2, Upload, X } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { persistedSnapshot, useSidekick, type SettingsTab } from "@/store/store";
@@ -96,7 +98,6 @@ function GeneralTab() {
       </Button>
       {more && (
         <div className="space-y-3 rounded-2xl border-2 border-line p-3">
-          <Toggle checked={prefs.followClassDefaultWorkspace} onChange={(followClassDefaultWorkspace) => set({ followClassDefaultWorkspace })} label="Open a class's default workspace" description="When switching classes, also switch to the workspace assigned to that class." />
           <Toggle checked={prefs.shortcutsEnabled} onChange={(shortcutsEnabled) => set({ shortcutsEnabled })} label="Keyboard shortcuts" />
           <ul className="space-y-1 text-sm">
             {SHORTCUTS.map((k) => (
@@ -114,8 +115,9 @@ function GeneralTab() {
 }
 
 function WorkspacesTab() {
-  const workspaces = useSidekick((s) => s.workspaces);
-  const active = useSidekick((s) => s.activeWorkspaceId);
+  const workspaces = useSidekick(useShallow((s) => s.workspaces.filter(isShared)));
+  const active = useSidekick((s) => sharedIdOf(s, s.activeWorkspaceId));
+  const [newOpen, setNewOpen] = useState(false);
   const s = useSidekick.getState;
   const [confirmEl, ask] = useConfirm();
   const [promptEl, prompt] = usePrompt();
@@ -123,7 +125,8 @@ function WorkspacesTab() {
     <div className="space-y-3">
       {confirmEl}
       {promptEl}
-      <p className="text-sm text-ink-soft">A workspace is a saved arrangement of widgets. Classes and workspaces are independent; assign a default workspace to a class in Classes → Class.</p>
+      <p className="text-sm text-ink-soft">A teaching workspace is how you teach: its widgets, layout and Quick Dock. Every class shares it; use “Customize for This Class” in the workspace menu to give one class its own version.</p>
+      <NewWorkspaceDialog open={newOpen} onClose={() => setNewOpen(false)} />
       <ul className="space-y-1.5">
         {workspaces.map((w) => (
           <li key={w.id} className={cx("flex items-center gap-1.5 rounded-2xl border-2 p-1.5", w.id === active ? "border-brand" : "border-line")}>
@@ -151,10 +154,7 @@ function WorkspacesTab() {
       </ul>
       <Button
         variant="primary"
-        onClick={async () => {
-          const name = await prompt("New workspace", "Workspace name", "New workspace", "Create");
-          if (name) s().addWorkspace(name);
-        }}
+        onClick={() => setNewOpen(true)}
       >
         <Plus size={16} /> New workspace
       </Button>

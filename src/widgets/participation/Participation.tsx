@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, RotateCcw, Undo2 } from "lucide-react";
 import { emptyParticipation, useSidekick } from "@/store/store";
 import { useActiveClass } from "@/store/hooks";
@@ -23,6 +23,12 @@ function Inner({ big }: { id: string; big: boolean }) {
   const checked = new Set(data.checked.filter((sid) => cls.students.some((s) => s.id === sid)));
   const list = cls.students.filter((s) => (filter === "all" ? true : filter === "done" ? checked.has(s.id) : !checked.has(s.id)));
   const total = cls.students.length;
+  const past = data.sessions ?? [];
+  const last = past[past.length - 1];
+  // A new school day starts a fresh session (the old one is kept in the history).
+  useEffect(() => {
+    useSidekick.getState().ensureParticipationDay(cls.id);
+  }, [cls.id]);
 
   return (
     <div className="space-y-2">
@@ -30,7 +36,7 @@ function Inner({ big }: { id: string; big: boolean }) {
         <p className="flex-1 font-extrabold" data-testid="participation-progress" aria-live="polite">
           {checked.size} of {total} students
         </p>
-        <span className="text-xs text-ink-soft">since {new Date(data.lessonStartedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+        <span className="text-xs text-ink-soft">session since {new Date(data.lessonStartedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
       </div>
       <div className="h-2.5 overflow-hidden rounded-full bg-line" aria-hidden>
         <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${total ? (checked.size / total) * 100 : 0}%` }} />
@@ -69,10 +75,28 @@ function Inner({ big }: { id: string; big: boolean }) {
         <Button size="sm" variant="ghost" disabled={data.history.length === 0} onClick={() => st().undoParticipation(cls.id)}>
           <Undo2 size={14} /> Undo
         </Button>
-        <Button size="sm" variant="outline" onClick={() => st().resetParticipation(cls.id)} disabled={checked.size === 0}>
-          <RotateCcw size={14} /> New lesson
+        <Button size="sm" variant="outline" onClick={() => st().startParticipationSession(cls.id)} disabled={checked.size === 0}>
+          <RotateCcw size={14} /> Start New Session
         </Button>
       </div>
+      {last && (
+        <details className="text-xs text-ink-soft" data-testid="participation-history">
+          <summary className="cursor-pointer font-bold">
+            Past sessions ({past.length}) · last: {last.checked.length} of {last.total}
+          </summary>
+          <ul className="mt-1 space-y-0.5">
+            {past
+              .slice()
+              .reverse()
+              .slice(0, 10)
+              .map((p) => (
+                <li key={p.startedAt}>
+                  {new Date(p.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} — {p.checked.length} of {p.total} participated
+                </li>
+              ))}
+          </ul>
+        </details>
+      )}
     </div>
   );
 }

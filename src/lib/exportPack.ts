@@ -62,7 +62,7 @@ export function buildSettingsPack(s: PersistedState): SettingsPack {
     version: 1,
     exportedAt: new Date().toISOString(),
     theme: s.prefs.themeId,
-    workspaces: s.workspaces.map((w) => ({ name: w.name, widgets: w.widgetIds.map((id) => s.widgets[id]).filter(Boolean).map(packWidget) })),
+    workspaces: s.workspaces.filter((w) => !w.baseId).map((w) => ({ name: w.name, widgets: w.widgetIds.map((id) => s.widgets[id]).filter(Boolean).map(packWidget) })),
     favorites: s.favorites.map((f) => ({ name: scrub(f.name, names) as string, type: f.type, color: f.color, size: f.size, w: f.w ?? null, h: f.h ?? null, config: sanitizeConfig(f.type, f.config, names) })),
     routines: s.routines.map((r) => ({
       name: r.name,

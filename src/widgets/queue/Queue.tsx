@@ -14,13 +14,21 @@ interface QueueSession {
   queue: QItem[];
   now: QItem | null;
 }
+/** Each class keeps its own turn order ("none" = no class selected). */
+interface QueueStore extends Partial<QueueSession> {
+  byClass?: Record<string, QueueSession>;
+}
 
 function Body({ id, view }: WidgetProps) {
-  const [s, setS] = useSession<QueueSession>(id);
+  const [store, setStore] = useSession<QueueStore>(id);
   const cls = useActiveClass();
   const [draft, setDraft] = useState("");
   const listId = useId();
-  const q: QueueSession = s ?? { queue: [], now: null };
+  const key = cls?.id ?? "none";
+  // Older saves kept one queue for everyone: show it until this class makes its own.
+  const legacy: QueueSession | null = store?.queue ? { queue: store.queue, now: store.now ?? null } : null;
+  const q: QueueSession = store?.byClass?.[key] ?? legacy ?? { queue: [], now: null };
+  const setS = (next: QueueSession) => setStore({ byClass: { ...(store?.byClass ?? {}), [key]: next } });
   const add = () => {
     const name = draft.trim().slice(0, 60);
     if (!name) return;

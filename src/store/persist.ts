@@ -9,6 +9,7 @@
 import { get, set, createStore, type UseStore } from "idb-keyval";
 import type { PersistedState } from "@/lib/types";
 import { DEFAULT_PREFS, SCHEMA_VERSION, createDefaultState } from "./defaults";
+import { ensureAllRequired } from "./workspaceLogic";
 
 const KEY = "sidekick-state";
 const PREFS_KEY = "sidekick-prefs";
@@ -64,7 +65,11 @@ export function migrate(raw: unknown): PersistedState {
     ...w,
     widgetIds: w.widgetIds.filter((id) => merged.widgets[id] && !merged.widgets[id].removedAt),
   }));
-  return merged;
+  // Class customizations whose class or shared workspace is gone are dropped from the list.
+  merged.workspaces = merged.workspaces.filter((w) => !w.baseId || (merged.workspaces.some((b) => b.id === w.baseId) && merged.classes.some((c) => c.id === w.classId)));
+  if (!merged.workspaces.some((w) => w.id === merged.activeWorkspaceId)) merged.activeWorkspaceId = merged.workspaces.find((w) => !w.baseId)!.id;
+  // Every workspace gets its required CHAMPS (and Voice Level, except Whole Group). Adds only; nothing is moved or removed.
+  return ensureAllRequired(merged);
 }
 
 export interface LoadResult {
@@ -81,7 +86,7 @@ export async function loadState(): Promise<LoadResult> {
     return { state: createDefaultState(), fresh: true, recovered: `Storage is unavailable (${(e as Error).message}). Changes won't be saved.` };
   }
   if (raw === undefined) {
-    const state = createDefaultState();
+    const state = ensureAllRequired(createDefaultState());
     const prefs = readLocalPrefs();
     if (prefs) state.prefs = { ...state.prefs, ...prefs };
     return { state, fresh: true };

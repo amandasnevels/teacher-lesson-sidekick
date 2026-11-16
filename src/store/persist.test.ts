@@ -20,7 +20,9 @@ describe("persistence", () => {
 
     resetStore(); // simulate a fresh page
     const { state } = await loadState();
-    expect(state.workspaces[0].widgetIds).toEqual([c, a, b]);
+    // Order kept; the required CHAMPS + Voice Level are added in front (never reordering the rest).
+    expect(state.workspaces[0].widgetIds.slice(-3)).toEqual([c, a, b]);
+    expect(state.workspaces[0].widgetIds.map((id) => state.widgets[id].type).slice(0, 2).sort()).toEqual(["champs", "voice"]);
     expect(state.widgets[b].config.options).toHaveLength(3);
     expect(state.records.points[cls].whole).toBe(7);
   });

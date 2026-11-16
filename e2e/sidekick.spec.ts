@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { openApp, waitForSave, widget, widgetOrder } from "./helpers";
+import { champsOnlyWorkspace, openApp, waitForSave, widget, widgetOrder } from "./helpers";
 
 test.describe("narrow-first layout", () => {
   for (const width of [280, 320, 375, 768, 1280]) {
@@ -289,7 +289,7 @@ test("resize grips work from the keyboard and are hidden on locked widgets", asy
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
   await expect(card).toHaveAttribute("data-span", "1");
-  await page.getByRole("button", { name: "More options for Timer" }).click();
+  await page.getByRole("button", { name: "More options for CHAMPS" }).click();
   await page.getByRole("menuitem", { name: "Lock" }).click();
   await expect(card.getByTestId("resize-right")).toHaveCount(0);
 });
@@ -475,10 +475,8 @@ test("I Will: search ELPS by domain, add with a sentence stem, and track", async
 test("packed grid: short widgets stack beside tall ones; S/M/L size buttons", async ({ page }) => {
   await page.setViewportSize({ width: 780, height: 900 });
   await openApp(page);
-  await page.getByTestId("workspace-select").selectOption("__new");
-  await page.getByRole("dialog").getByRole("textbox").fill("Packing");
-  await page.getByRole("button", { name: "Create", exact: true }).click();
-  for (const n of ["CHAMPS", "Clock", "Dice", "Tally Counter"]) {
+  await champsOnlyWorkspace(page, "Packing");
+  for (const n of ["Clock", "Dice", "Tally Counter"]) {
     await page.getByRole("button", { name: "Add widget", exact: true }).click();
     await page.getByRole("button", { name: `Add new ${n}`, exact: true }).click();
   }
@@ -506,10 +504,8 @@ test("drag a widget under or above another in any column; contents grow with the
   await page.setViewportSize({ width: 1280, height: 900 });
   await openApp(page);
   await page.getByRole("button", { name: "Dismiss tip" }).click();
-  await page.getByTestId("workspace-select").selectOption("__new");
-  await page.getByRole("dialog").getByRole("textbox").fill("Stacking");
-  await page.getByRole("button", { name: "Create", exact: true }).click();
-  for (const n of ["CHAMPS", "Sticky Note", "Clock", "Dice"]) {
+  await champsOnlyWorkspace(page, "Stacking");
+  for (const n of ["Sticky Note", "Clock", "Dice"]) {
     await page.getByRole("button", { name: "Add widget", exact: true }).click();
     await page.getByRole("button", { name: `Add new ${n}`, exact: true }).click();
   }

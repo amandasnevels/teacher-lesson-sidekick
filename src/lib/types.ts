@@ -98,6 +98,8 @@ export interface ClassRoom {
   students: Student[];
   groups: StudentGroup[];
   defaultWorkspaceId?: string | null;
+  /** The teaching workspace this class used most recently (offered when switching to the class). */
+  lastWorkspaceId?: string | null;
 }
 
 /** Where a widget sits in the 2D grid (column x, row y) for one column count. */
@@ -107,9 +109,23 @@ export interface LayoutPos {
   y: number;
 }
 
+/** What a teaching workspace is for (from its template). Whole Group is the only kind without a required Voice Level. */
+export type WorkspaceKind = "wholeGroup" | "centers" | "smallGroup" | "assessment" | "management" | "daily" | "custom";
+
 export interface Workspace {
   id: string;
   name: string;
+  kind?: WorkspaceKind;
+  /**
+   * Set on a class-specific customization of a shared workspace ("Customize for This Class").
+   * These are hidden from workspace lists; the shared workspace stays untouched.
+   */
+  baseId?: string | null;
+  classId?: string | null;
+  /** Customization switched off ("use the shared workspace"); kept so it can be turned back on. */
+  overrideOff?: boolean;
+  /** Quick Dock items saved with this workspace (loaded when it becomes active). */
+  dock?: DockItem[];
   /** Visible widget instance ids, in reading order (top-left to bottom-right). */
   widgetIds: string[];
   /** Positions the teacher arranged, per column count (e.g. "3"). Missing widgets are placed automatically. */
@@ -207,8 +223,18 @@ export interface PointsData {
   periodKey?: string;
 }
 
+/** A finished participation session (kept as history; checkmarks start fresh each session). */
+export interface ParticipationSession {
+  startedAt: number;
+  endedAt: number;
+  checked: string[];
+  total: number;
+}
+
 export interface ParticipationData {
   lessonStartedAt: number;
+  /** Earlier sessions for this class, oldest first (latest 60 kept). */
+  sessions?: ParticipationSession[];
   checked: string[];
   /** Previous `checked` arrays for undo. */
   history: string[][];

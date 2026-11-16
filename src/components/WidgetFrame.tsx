@@ -1,5 +1,6 @@
 "use client";
 import { memo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { isRequiredWidget, isShared } from "@/store/workspaceLogic";
 import {
   ChevronDown,
   Copy,
@@ -72,6 +73,7 @@ export function accentStyle(color: string): CSSProperties {
 
 export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize, scale = 1 }: { id: string; handle?: HandleProps; resize?: ResizeProps; scale?: number }) {
   const w = useWidget(id);
+  const required = useSidekick((st) => isRequiredWidget(st, id));
   const expanded = useSidekick((s) => s.expandedWidgetId === id);
   const flashing = useSidekick((s) => s.flashWidgetId === id);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -237,8 +239,14 @@ export const WidgetFrame = memo(function WidgetFrame({ id, handle, resize, scale
             <MenuItem icon={<Maximize2 size={16} />} onSelect={() => { closeMenu(); s().expandWidget(id); }}>
               Expand
             </MenuItem>
-            <MenuItem icon={<Trash2 size={16} />} danger onSelect={() => { closeMenu(); s().removeWidget(id); }}>
-              Remove
+            <MenuItem
+              icon={<Trash2 size={16} />}
+              danger
+              disabled={required}
+              title={required ? "Required in this workspace — collapse it instead" : undefined}
+              onSelect={() => { closeMenu(); s().removeWidget(id); }}
+            >
+              {required ? "Remove (required here)" : "Remove"}
             </MenuItem>
             <MenuItem icon={<Settings2 size={16} />} onSelect={() => { closeMenu(); setSettingsOpen(true); }}>
               More Settings
@@ -268,7 +276,7 @@ function WidgetSettingsDialog({ id, onClose, onFavorite }: { id: string; onClose
   const def = DEFINITIONS[w.type];
   const mod = WIDGET_MODULES[w.type];
   const s = useSidekick.getState;
-  const workspaces = useSelectValue((st) => st.workspaces.map((x) => ({ id: x.id, name: x.name })));
+  const workspaces = useSelectValue((st) => st.workspaces.filter(isShared).map((x) => ({ id: x.id, name: x.name })));
   const [target, setTarget] = useState(workspaces.find((x) => x.id !== w.workspaceId)?.id ?? "");
   return (
     <Modal open onClose={onClose} title={`${def.emoji} ${w.title || def.name} settings`} footer={<Button variant="primary" onClick={onClose}>Done</Button>}>

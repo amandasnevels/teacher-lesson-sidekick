@@ -1,15 +1,23 @@
 "use client";
-import { Plus, Search, Settings2 } from "lucide-react";
+import { GraduationCap, LayoutGrid, Plus, Search, Settings2 } from "lucide-react";
+import { useState } from "react";
 import { useSelectValue } from "@/store/hooks";
 import { useSidekick } from "@/store/store";
 import { IconButton, cx, usePrompt } from "./ui";
+import { ClassSwitchDialog, NewWorkspaceDialog } from "./WorkspaceDialogs";
+import { isShared, overrideFor, sharedIdOf } from "@/store/workspaceLogic";
 
 export function Header() {
   const s = useSidekick.getState;
   const classes = useSelectValue((st) => st.classes.map((c) => ({ id: c.id, name: c.name, n: c.students.length })));
   const activeClassId = useSidekick((st) => st.activeClassId);
-  const workspaces = useSelectValue((st) => st.workspaces.map((w) => ({ id: w.id, name: w.name })));
-  const activeWs = useSidekick((st) => st.activeWorkspaceId);
+  const workspaces = useSelectValue((st) => st.workspaces.filter(isShared).map((w) => ({ id: w.id, name: w.name })));
+  // The dropdown shows the shared workspace; a class customization is shown as "(P2 version)".
+  const activeWs = useSidekick((st) => sharedIdOf(st, st.activeWorkspaceId));
+  const customized = useSidekick((st) => st.workspaces.some((w) => w.id === st.activeWorkspaceId && !!w.baseId));
+  const hasSavedCustom = useSidekick((st) => !!overrideFor(st, sharedIdOf(st, st.activeWorkspaceId), st.activeClassId));
+  const activeClassName = useSidekick((st) => st.classes.find((c) => c.id === st.activeClassId)?.name ?? "");
+  const [newWsOpen, setNewWsOpen] = useState(false);
   const navStyle = useSidekick((st) => st.prefs.navStyle);
   const storageMessage = useSidekick((st) => st.storageMessage);
   const [promptEl, ask] = usePrompt();
@@ -20,6 +28,8 @@ export function Header() {
   return (
     <header className="border-b border-line bg-card/85 px-2.5 pb-2 pt-2 backdrop-blur sm:px-4">
       {promptEl}
+      <ClassSwitchDialog />
+      <NewWorkspaceDialog open={newWsOpen} onClose={() => setNewWsOpen(false)} />
       <div className="flex items-center gap-1.5">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <h1 className="m-0 min-w-0 leading-none">
@@ -52,7 +62,9 @@ export function Header() {
       </div>
       <div className="mt-2 grid grid-cols-2 gap-1.5">
         <label className="relative min-w-0">
-          <span className="sr-only">Class</span>
+          <span className="mb-0.5 flex items-center gap-1 overflow-hidden whitespace-nowrap px-0.5 text-xs font-extrabold text-ink-soft">
+            <GraduationCap size={14} className="shrink-0" aria-hidden /> <span className="truncate">Active Class</span>
+          </span>
           <select
             className={selectCls}
             value={activeClassId ?? ""}
@@ -64,13 +76,13 @@ export function Header() {
                   if (name) s().setActiveClass(s().addClass(name));
                 });
               } else if (v === "__manage") s().openSettings("classes");
-              else s().setActiveClass(v || null);
+              else s().setActiveClass(v || null, { prompt: true });
             }}
           >
-            {!activeClassId && <option value="">🧑‍🎓 No class</option>}
+            {!activeClassId && <option value="">No class</option>}
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
-                🧑‍🎓 {c.name} ({c.n})
+                {c.name} ({c.n})
               </option>
             ))}
             <option value="__new">＋ New class…</option>
@@ -79,26 +91,32 @@ export function Header() {
         </label>
         {navStyle === "compact" ? (
           <label className="relative min-w-0">
-            <span className="sr-only">Workspace</span>
+            <span className="mb-0.5 flex items-center gap-1 overflow-hidden whitespace-nowrap px-0.5 text-xs font-extrabold text-ink-soft">
+              <LayoutGrid size={14} className="shrink-0" aria-hidden /> <span className="truncate">Teaching Workspace</span>
+            </span>
             <select
               className={selectCls}
               value={activeWs}
               data-testid="workspace-select"
               onChange={(e) => {
                 const v = e.target.value;
-                if (v === "__new") {
-                  void ask("New workspace", "Workspace name", "New workspace", "Create").then((name) => {
-                    if (name) s().addWorkspace(name);
-                  });
-                } else if (v === "__manage") s().openSettings("workspaces");
+                if (v === "__new") setNewWsOpen(true);
+                else if (v === "__customize") s().setCustomizeForClass(true);
+                else if (v === "__shared") s().setCustomizeForClass(false);
+                else if (v === "__manage") s().openSettings("workspaces");
                 else s().setActiveWorkspace(v);
               }}
             >
               {workspaces.map((w) => (
                 <option key={w.id} value={w.id}>
-                  🗂️ {w.name}
+                  {w.name}
+                  {w.id === activeWs && customized ? ` (${activeClassName} version)` : ""}
                 </option>
               ))}
+              {activeClassId && !customized && (
+                <option value="__customize">✏️ Customize for This Class{hasSavedCustom ? " (restore)" : ""}</option>
+              )}
+              {activeClassId && customized && <option value="__shared">↩️ Use Shared Workspace</option>}
               <option value="__new">＋ New workspace…</option>
               <option value="__manage">Manage workspaces…</option>
             </select>

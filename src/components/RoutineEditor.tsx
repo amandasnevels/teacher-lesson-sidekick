@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { isShared, sharedIdOf } from "@/store/workspaceLogic";
 import { useSelectValue } from "@/store/hooks";
 import { useSidekick } from "@/store/store";
 import { describeAction, routineFromCurrentSetup } from "@/store/actions";
@@ -51,7 +52,7 @@ export const fromDraft = (d: Draft): RoutineAction[] => ORDER.filter((k) => d[k]
 export function RoutineEditor() {
   const { open, routineId, mode } = useSidekick((s) => s.routineEditor);
   const existing = useSidekick((s) => s.routines.find((r) => r.id === routineId));
-  const workspaces = useSelectValue((s) => s.workspaces.map((w) => ({ id: w.id, name: w.name })));
+  const workspaces = useSelectValue((s) => s.workspaces.filter(isShared).map((w) => ({ id: w.id, name: w.name })));
   const activeWs = useSidekick((s) => s.activeWorkspaceId);
   const [stage, setStage] = useState<"template" | "edit">("edit");
   const [name, setName] = useState("");

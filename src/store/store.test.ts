@@ -1,3 +1,4 @@
+import { persistedSnapshot } from "./store";
 import { beforeEach, describe, expect, it } from "vitest";
 import { scopeKey } from "./store";
 import { runRoutine, startTimerFor } from "./actions";
@@ -127,7 +128,24 @@ describe("classes and class data", () => {
     S().resetParticipation(c1);
     expect(S().records.participation[c1].checked).toEqual([]);
     expect(S().records.participation[c2].checked).toEqual([cy]);
-    S().undoParticipation(c1);
+    // The finished session is kept as history, and the whole step can be undone.
+    expect(S().records.participation[c1].sessions?.[0].checked).toEqual([ana]);
+    expect(S().records.participation[c2].sessions ?? []).toEqual([]);
+    S().undo();
+    expect(S().records.participation[c1].checked).toEqual([ana]);
+  });
+
+  it("a new school day starts a fresh participation session without losing the old one", () => {
+    const c1 = addClassWith("P1", ["Ana"]);
+    const ana = S().classes[0].students[0].id;
+    S().toggleParticipation(c1, ana);
+    const p = S().records.participation[c1];
+    S().replaceAll({ ...persistedSnapshot(), records: { ...S().records, participation: { [c1]: { ...p, lessonStartedAt: Date.now() - 86_400_000 * 2 } } } });
+    S().ensureParticipationDay(c1);
+    expect(S().records.participation[c1].checked).toEqual([]);
+    expect(S().records.participation[c1].sessions?.[0].checked).toEqual([ana]);
+    S().toggleParticipation(c1, ana);
+    S().ensureParticipationDay(c1); // same day: nothing changes
     expect(S().records.participation[c1].checked).toEqual([ana]);
   });
 
@@ -141,16 +159,20 @@ describe("classes and class data", () => {
     expect(S().activeClassId).toBe(c1);
   });
 
-  it("class can open its default workspace; switching classes keeps it otherwise", () => {
+  it("switching classes keeps the workspace and offers the class's last-used one", () => {
     const ws2 = S().addWorkspace("Math block");
     S().setActiveWorkspace("ws1");
     const c1 = S().addClass("P1");
     const c2 = S().addClass("P2");
-    S().setClassDefaultWorkspace(c2, ws2);
-    S().setActiveClass(c2);
-    expect(S().activeWorkspaceId).toBe(ws2);
     S().setActiveClass(c1);
-    expect(S().activeWorkspaceId).toBe(ws2); // c1 has no default → workspace unchanged
+    S().setActiveWorkspace(ws2); // P1 last used Math block
+    S().setActiveClass(c2, { prompt: true });
+    expect(S().activeWorkspaceId).toBe(ws2); // never switched automatically
+    expect(S().classSwitchPrompt).toEqual({ classId: c2, lastWorkspaceId: null });
+    S().setActiveWorkspace("ws1"); // P2 picks ws1
+    S().setActiveClass(c1, { prompt: true });
+    expect(S().activeWorkspaceId).toBe("ws1");
+    expect(S().classSwitchPrompt).toEqual({ classId: c1, lastWorkspaceId: ws2 });
   });
 
   it("picker rounds are kept per class", () => {

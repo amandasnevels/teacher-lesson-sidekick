@@ -1,15 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { openApp, waitForSave, widget } from "./helpers";
 
-test("CHAMPS: add at 320px, switch to Stations, edit two presets, reload, and expand", async ({ page }) => {
+test("CHAMPS: required in the workspace at 320px, switch to Stations, edit two presets, reload, and expand", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 720 });
   await openApp(page);
 
-  // Add from Widget Library → Management.
+  // Every workspace already has CHAMPS; it's also listed in Widget Library → Management.
   await page.getByRole("button", { name: "Add widget", exact: true }).click();
   const library = page.getByRole("dialog", { name: "Widget Library" });
   await library.getByRole("button", { name: "Management", exact: true }).click();
-  await library.getByRole("button", { name: "Add new CHAMPS", exact: true }).click();
+  await expect(library.getByRole("button", { name: "Add new CHAMPS", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator('[data-testid="widget-champs"]')).toHaveCount(1);
   const w = widget(page, "champs");
   await w.scrollIntoViewIfNeeded();
   const presets = w.getByRole("combobox", { name: "CHAMPS activity" });

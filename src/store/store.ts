@@ -24,6 +24,19 @@ import { clone } from "@/lib/clone";
 import { validateNames, type ImportResult } from "@/lib/roster";
 import { DEFINITIONS } from "@/widgets/definitions";
 import { createDefaultState, makeInstance } from "./defaults";
+import { PERSISTED_KEYS } from "./persist";
+import {
+  changeClass,
+  createWorkspace,
+  customizeForClass,
+  effectiveId,
+  isRequiredWidget,
+  isShared,
+  sharedIdOf,
+  switchTo,
+  useSharedForClass,
+  type NewWorkspaceChoice,
+} from "./workspaceLogic";
 
 /* ------------------------------------------------------------------ UI-only state */
 
@@ -64,6 +77,8 @@ interface UIState {
   signals: Record<string, Signal>;
   lastTimerId: string | null;
   flashWidgetId: string | null;
+  /** Shown after switching classes: keep / last-used / choose a workspace. */
+  classSwitchPrompt: { classId: string; lastWorkspaceId: string | null } | null;
 }
 
 /* ------------------------------------------------------------------ helpers */
@@ -110,7 +125,9 @@ interface Actions {
   addClass(name: string): string;
   renameClass(id: string, name: string): void;
   deleteClass(id: string): void;
-  setActiveClass(id: string | null): void;
+  /** Change the active class; `prompt` asks which workspace to use next (when there's a choice). */
+  setActiveClass(id: string | null, opts?: { prompt?: boolean }): void;
+  closeClassSwitchPrompt(): void;
   setClassDefaultWorkspace(classId: string, workspaceId: string | null): void;
   addStudents(classId: string, names: string[]): ImportResult;
   renameStudent(classId: string, studentId: string, name: string): boolean;
@@ -124,6 +141,9 @@ interface Actions {
 
   // workspaces
   addWorkspace(name: string, copyFromId?: string): string;
+  createWorkspace(choice: NewWorkspaceChoice): string;
+  /** "Customize for This Class": on = the class gets its own copy of the active shared workspace. */
+  setCustomizeForClass(on: boolean): void;
   renameWorkspace(id: string, name: string): void;
   deleteWorkspace(id: string): void;
   setActiveWorkspace(id: string): void;
@@ -166,6 +186,10 @@ interface Actions {
   toggleParticipation(classId: string, studentId: string): void;
   undoParticipation(classId: string): boolean;
   resetParticipation(classId: string): void;
+  /** Archive this session's checkmarks and start fresh (roster and history are kept). */
+  startParticipationSession(classId: string): void;
+  /** Starts a fresh session automatically on a new school day. */
+  ensureParticipationDay(classId: string): void;
   setPickerDrawn(key: string, drawn: string[]): void;
   setReward(key: string, value: number): void;
   hallCheckOut(classId: string, studentId: string, destination: string, source?: "teacher" | "student"): boolean;
@@ -194,6 +218,7 @@ const initialUI: UIState = {
   signals: {},
   lastTimerId: null,
   flashWidgetId: null,
+  classSwitchPrompt: null,
 };
 
 const UNDO_LIMIT = 30;
@@ -214,12 +239,22 @@ export const useSidekick = create<SidekickState>()((set, get) => {
   const setPart = (classId: string, data: ParticipationData) =>
     set((s) => ({ records: { ...s.records, participation: { ...s.records.participation, [classId]: data } } }));
 
+  /** Apply a pure state transform, writing back only the persisted keys that changed. */
+  const apply = (fn: (s: PersistedState) => PersistedState) => {
+    const cur = get();
+    const next = fn(cur as unknown as PersistedState);
+    const patch: Partial<PersistedState> = {};
+    for (const k of PERSISTED_KEYS) if (next[k] !== (cur as unknown as PersistedState)[k]) (patch as Record<string, unknown>)[k] = next[k];
+    if (Object.keys(patch).length) set(patch);
+  };
+
   return {
     ...createDefaultState(),
     ...initialUI,
 
     hydrate(state, message = null) {
       set({ ...state, hydrated: true, storageMessage: message });
+      if (state.activeClassId) get().ensureParticipationDay(state.activeClassId);
     },
     replaceAll(state) {
       set({ ...state, expandedWidgetId: null, undoStack: [], signals: {} });
@@ -316,6 +351,18 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       mutateClass(id, (c) => ({ ...c, name: name.trim() }));
     },
     deleteClass(id) {
+      // The class's workspace customizations go too (their widgets stay recoverable in Removed Widgets).
+      const before = get();
+      const mine = before.workspaces.filter((w) => w.classId === id);
+      if (mine.length) {
+        if (mine.some((w) => w.id === before.activeWorkspaceId)) apply((st) => switchTo(st, sharedIdOf(st, st.activeWorkspaceId)));
+        const now = Date.now();
+        set((s) => {
+          const widgets = { ...s.widgets };
+          for (const w of mine) for (const wid of w.widgetIds) if (widgets[wid]) widgets[wid] = { ...widgets[wid], removedAt: now };
+          return { widgets, workspaces: s.workspaces.filter((w) => w.classId !== id) };
+        });
+      }
       set((s) => {
         const classes = s.classes.filter((c) => c.id !== id);
         const { [id]: _p, ...points } = s.records.points;
@@ -336,15 +383,20 @@ export const useSidekick = create<SidekickState>()((set, get) => {
         };
       });
     },
-    setActiveClass(id) {
+    setActiveClass(id, opts) {
       const s = get();
       if (id === s.activeClassId) return;
       const cls = s.classes.find((c) => c.id === id);
-      const patch: Partial<PersistedState> = { activeClassId: id };
-      if (cls?.defaultWorkspaceId && s.prefs.followClassDefaultWorkspace && s.workspaces.some((w) => w.id === cls.defaultWorkspaceId)) {
-        patch.activeWorkspaceId = cls.defaultWorkspaceId;
-      }
-      set(patch);
+      apply((st) => changeClass(st, id));
+      if (id) get().ensureParticipationDay(id);
+      const shared = get().workspaces.filter(isShared);
+      if (opts?.prompt && cls && shared.length > 1) {
+        const last = [cls.lastWorkspaceId, cls.defaultWorkspaceId].find((w) => w && shared.some((x) => x.id === w)) ?? null;
+        set({ classSwitchPrompt: { classId: cls.id, lastWorkspaceId: last } });
+      } else set({ classSwitchPrompt: null });
+    },
+    closeClassSwitchPrompt() {
+      set({ classSwitchPrompt: null });
     },
     setClassDefaultWorkspace(classId, workspaceId) {
       mutateClass(classId, (c) => ({ ...c, defaultWorkspaceId: workspaceId }));
@@ -409,22 +461,24 @@ export const useSidekick = create<SidekickState>()((set, get) => {
 
     /* ---------------------------------------------------------- workspaces */
     addWorkspace(name, copyFromId) {
-      const id = uid("ws");
-      const s = get();
-      const ws: Workspace = { id, name: name.trim() || "New workspace", widgetIds: [] };
-      const widgets = { ...s.widgets };
-      const src = copyFromId ? s.workspaces.find((w) => w.id === copyFromId) : null;
-      if (src) {
-        for (const wid of src.widgetIds) {
-          const orig = s.widgets[wid];
-          if (!orig) continue;
-          const copy: WidgetInstance = { ...clone(orig), id: uid("w"), workspaceId: id, createdAt: Date.now(), removedAt: null };
-          widgets[copy.id] = copy;
-          ws.widgetIds.push(copy.id);
-        }
-      }
-      set({ workspaces: [...s.workspaces, ws], widgets, activeWorkspaceId: id });
+      return get().createWorkspace(copyFromId ? { mode: "duplicate", fromId: copyFromId, name } : { mode: "blank", name });
+    },
+    createWorkspace(choice) {
+      let id = "";
+      apply((st) => {
+        const r = createWorkspace(st, choice);
+        id = r.id;
+        return r.state;
+      });
+      set({ expandedWidgetId: null });
       return id;
+    },
+    setCustomizeForClass(on) {
+      const s = get();
+      if (!s.activeClassId) return;
+      const shared = sharedIdOf(s, s.activeWorkspaceId);
+      apply((st) => (on ? customizeForClass(st, shared, st.activeClassId!) : useSharedForClass(st, shared, st.activeClassId!)));
+      set({ expandedWidgetId: null });
     },
     renameWorkspace(id, name) {
       if (!name.trim()) return;
@@ -432,23 +486,35 @@ export const useSidekick = create<SidekickState>()((set, get) => {
     },
     deleteWorkspace(id) {
       const s = get();
-      if (s.workspaces.length <= 1) return;
-      const ws = s.workspaces.find((w) => w.id === id);
+      if (s.workspaces.filter(isShared).length <= 1) return;
+      const ws = s.workspaces.find((w) => w.id === id && isShared(w));
       if (!ws) return;
+      // Leave it first (pauses its timers, keeps the dock), then remove it and its class customizations.
+      if (sharedIdOf(s, s.activeWorkspaceId) === id) {
+        const other = s.workspaces.find((w) => isShared(w) && w.id !== id)!;
+        apply((st) => switchTo(st, effectiveId(st, other.id, st.activeClassId)));
+      }
+      const gone = get().workspaces.filter((w) => w.id === id || w.baseId === id);
       const now = Date.now();
-      const widgets = { ...s.widgets };
+      const widgets = { ...get().widgets };
       // Its widgets become recoverable from Removed Widgets — nothing is destroyed.
-      for (const wid of ws.widgetIds) if (widgets[wid]) widgets[wid] = { ...widgets[wid], removedAt: now };
-      const workspaces = s.workspaces.filter((w) => w.id !== id);
-      set({
-        workspaces,
+      for (const g of gone) for (const wid of g.widgetIds) if (widgets[wid]) widgets[wid] = { ...widgets[wid], removedAt: now };
+      set((st) => ({
+        workspaces: st.workspaces.filter((w) => !gone.includes(w)),
         widgets,
-        activeWorkspaceId: s.activeWorkspaceId === id ? workspaces[0].id : s.activeWorkspaceId,
-        classes: s.classes.map((c) => (c.defaultWorkspaceId === id ? { ...c, defaultWorkspaceId: null } : c)),
-      });
+        classes: st.classes.map((c) => ({
+          ...c,
+          defaultWorkspaceId: c.defaultWorkspaceId === id ? null : c.defaultWorkspaceId,
+          lastWorkspaceId: c.lastWorkspaceId === id ? null : c.lastWorkspaceId,
+        })),
+      }));
     },
     setActiveWorkspace(id) {
-      if (get().workspaces.some((w) => w.id === id)) set({ activeWorkspaceId: id, expandedWidgetId: null });
+      const s = get();
+      if (!s.workspaces.some((w) => w.id === id)) return;
+      // Pick the shared workspace, shown with this class's customization when it has one.
+      apply((st) => switchTo(st, effectiveId(st, sharedIdOf(st, id), st.activeClassId)));
+      set({ expandedWidgetId: null, classSwitchPrompt: null });
     },
     setWorkspaceLayout(workspaceId, cols, positions, order) {
       set((s) => ({
@@ -526,6 +592,10 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       const s = get();
       const w = s.widgets[id];
       if (!w) return;
+      if (isRequiredWidget(s, id)) {
+        get().toast({ message: `${DEFINITIONS[w.type].name} is required in this workspace. You can collapse it instead.`, timeout: 5000 });
+        return;
+      }
       s.pushUndo(`Remove ${DEFINITIONS[w.type].name}`, ["widgets", "workspaces"]);
       set({
         widgets: { ...s.widgets, [id]: { ...w, removedAt: Date.now() } },
@@ -672,8 +742,25 @@ export const useSidekick = create<SidekickState>()((set, get) => {
       return true;
     },
     resetParticipation(classId) {
+      get().startParticipationSession(classId);
+    },
+    startParticipationSession(classId) {
       const p = partOf(classId);
-      setPart(classId, { lessonStartedAt: Date.now(), checked: [], history: [...p.history.slice(-49), p.checked] });
+      const total = get().classes.find((c) => c.id === classId)?.students.length ?? 0;
+      get().pushUndo("Start new session", ["records"]);
+      const sessions = [...(p.sessions ?? [])];
+      if (p.checked.length) sessions.push({ startedAt: p.lessonStartedAt, endedAt: Date.now(), checked: p.checked, total });
+      setPart(classId, { lessonStartedAt: Date.now(), checked: [], history: [], sessions: sessions.slice(-60) });
+    },
+    ensureParticipationDay(classId) {
+      const p = get().records.participation[classId];
+      if (!p) return;
+      const day = (t: number) => new Date(t).toDateString();
+      if (day(p.lessonStartedAt) === day(Date.now())) return;
+      const total = get().classes.find((c) => c.id === classId)?.students.length ?? 0;
+      const sessions = [...(p.sessions ?? [])];
+      if (p.checked.length) sessions.push({ startedAt: p.lessonStartedAt, endedAt: p.lessonStartedAt, checked: p.checked, total });
+      setPart(classId, { lessonStartedAt: Date.now(), checked: [], history: [], sessions: sessions.slice(-60) });
     },
     setPickerDrawn(key, drawn) {
       set((s) => ({ records: { ...s.records, picker: { ...s.records.picker, [key]: drawn } } }));
