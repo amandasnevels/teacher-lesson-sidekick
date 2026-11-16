@@ -1,5 +1,5 @@
 "use client";
-import { GraduationCap, LayoutGrid, Plus, Search, Settings2 } from "lucide-react";
+import { GraduationCap, Home, LayoutGrid, Plus, Search, Settings2 } from "lucide-react";
 import { useState } from "react";
 import { useSelectValue } from "@/store/hooks";
 import { useSidekick } from "@/store/store";
@@ -68,6 +68,17 @@ export function Header() {
             </button>
           </h1>
         </div>
+        <button
+          type="button"
+          onClick={() => s().openChooser("switch")}
+          aria-label="Main menu: choose a teaching workspace"
+          title="Main menu"
+          data-testid="main-menu"
+          className="inline-flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-xl border-2 border-line bg-card px-2 text-sm font-bold text-ink shadow-sm transition hover:bg-soft active:scale-95 min-[520px]:px-3"
+        >
+          <Home size={18} />
+          <span className="hidden min-[520px]:inline">Main menu</span>
+        </button>
         <IconButton label="Quick Find (Ctrl+K)" onClick={() => s().setQuickFind(true)} variant="outline">
           <Search size={18} />
         </IconButton>

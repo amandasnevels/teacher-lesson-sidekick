@@ -49,8 +49,8 @@ test("choose a preset → session kept across refreshes in this tab; a new tab s
   await expect(page.getByTestId("widget-grid")).toBeVisible();
   await expect(page.getByTestId("class-select").locator("option:checked")).toHaveText(/Period 3/);
 
-  // Return to the chooser and open another preset: the class is kept, no onboarding.
-  await page.getByRole("button", { name: /open the workspace chooser/ }).click();
+  // Return to the main menu (presets) and open another preset: the class is kept, no onboarding.
+  await page.getByTestId("main-menu").click();
   await expect(chooser(page)).toHaveAttribute("data-mode", "switch");
   await page.getByRole("button", { name: "Open Testing", exact: true }).click();
   await expect(page.getByTestId("workspace-select").locator("option:checked")).toHaveText("Testing");
