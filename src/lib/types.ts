@@ -42,7 +42,8 @@ export type WidgetType =
   | "hallpass"
   | "ican"
   | "iwill"
-  | "champs";
+  | "champs"
+  | "anchor";
 
 export type WidgetSize = "S" | "M" | "L";
 

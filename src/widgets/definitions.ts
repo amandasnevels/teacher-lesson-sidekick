@@ -391,6 +391,20 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
     usesRoster: false,
     defaultConfig: () => ({ ...defaultChampsConfig() }),
   },
+  anchor: {
+    type: "anchor",
+    name: "Anchor Chart",
+    emoji: "🖼️",
+    description: "Show an anchor chart poster. Pick one from the list or upload your own.",
+    category: "Learning",
+    keywords: ["anchor chart", "poster", "chart", "reference", "word work", "spelling", "vowel", "prefix", "upload", "picture"],
+    defaultColor: "lime",
+    defaultSize: "M",
+    usesRoster: false,
+    defaultConfig: () => ({ active: null, uploads: [] }),
+    // Uploaded charts are the teacher's own files: kept out of exported packs.
+    favoriteConfig: (c) => ({ ...c, uploads: [], active: typeof c.active === "string" && c.active.startsWith("builtin:") ? c.active : null }),
+  },
   quiz: {
     type: "quiz",
     name: "Quick Fact Game",
@@ -432,7 +446,7 @@ export interface WidgetPack {
 export const PACKS: WidgetPack[] = [
   { id: "management", name: "Classroom Management", emoji: "🧭", description: "Voice levels, sounds, status, visual cues and CHAMPS.", types: ["voice", "soundboard", "status", "cues", "champs"] },
   { id: "activities", name: "Interactive Activities", emoji: "🎲", description: "Dice, spinner, choices, coin, groups and a turn queue.", types: ["dice", "spinner", "choice", "coin", "groups", "queue"] },
-  { id: "learning", name: "Learning Games", emoji: "🧠", description: "Quick Fact Game and Fast Facts math flash cards.", types: ["quiz", "fastfacts"] },
+  { id: "learning", name: "Learning Games", emoji: "🧠", description: "Quick Fact Game, Fast Facts math flash cards and anchor charts.", types: ["quiz", "fastfacts", "anchor"] },
   { id: "rewards", name: "Rewards", emoji: "🏆", description: "Reward tracker and tally counter.", types: ["reward", "tally"] },
   { id: "schedule", name: "Schedule & Routines", emoji: "🗓️", description: "Schedule awareness and private reminders.", types: ["schedule", "reminders"] },
 ];

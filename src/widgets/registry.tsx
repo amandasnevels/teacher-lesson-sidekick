@@ -27,6 +27,7 @@ import FastFacts from "./fastfacts/FastFacts";
 import HallPass from "./hallpass/HallPass";
 import ICan, { IWillWidget } from "./ican/ICan";
 import Champs from "./champs/Champs";
+import Anchor from "./anchor/Anchor";
 
 export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
   timer: Timer,
@@ -57,4 +58,5 @@ export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
   ican: ICan,
   iwill: IWillWidget,
   champs: Champs,
+  anchor: Anchor,
 };
