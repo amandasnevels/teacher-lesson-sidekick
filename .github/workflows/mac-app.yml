@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       # Public by design (the website ships the same values); accounts are protected by row-level security.
