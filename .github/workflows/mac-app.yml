@@ -27,8 +27,34 @@ jobs:
         run: |
           SIDEKICK_DESKTOP=1 npx next build
           rm -rf desktop/app && cp -R out desktop/app && rm -f desktop/app/sw.js desktop/app/sw.js.map
+      - name: Load the signing certificate (when the secrets are set)
+        env:
+          MAC_CERT_P12: ${{ secrets.MAC_CERT_P12 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          if [ -z "$MAC_CERT_P12" ]; then echo "No certificate secret: building an unsigned app."; exit 0; fi
+          KC="$RUNNER_TEMP/sign.keychain-db"; KCPW="$(uuidgen)"
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          echo "$MAC_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KC" -P "$MAC_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KCPW" "$KC"
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          ID="$(security find-identity -v -p codesigning "$KC" | grep -o '"Developer ID Application:[^"]*"' | head -1 | tr -d '"')"
+          echo "Signing as: $ID"
+          echo "MAC_SIGN_IDENTITY=$ID" >> "$GITHUB_ENV"
+          if [ -n "$APPLE_API_KEY" ]; then
+            echo "$APPLE_API_KEY" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+            echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+          fi
       - name: Package Apple Silicon + Intel apps
         working-directory: desktop
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
           npm ci
           node package-mac.js
@@ -36,9 +62,16 @@ jobs:
           for pair in "arm64:Apple-Silicon" "x64:Intel"; do
             arch="${pair%%:*}"; name="${pair##*:}"
             rm -f "Teacher-Sidekick-Mac-$name.zip"
-            # Ad-hoc signature (free): Apple Silicon Macs won't run an unsigned app at all.
-            codesign --force --deep --sign - "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app"
-            codesign --verify --deep --strict "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app"
+            app="Teacher Sidekick-darwin-$arch/Teacher Sidekick.app"
+            if [ -z "$MAC_SIGN_IDENTITY" ]; then
+              # No certificate yet: ad-hoc signature (free) so Apple Silicon Macs can run it at all.
+              codesign --force --deep --sign - "$app"
+            else
+              # Signed + notarized: check that Apple's approval is attached.
+              xcrun stapler validate "$app"
+              spctl --assess --type execute -vv "$app"
+            fi
+            codesign --verify --deep --strict "$app"
             ditto -c -k --sequesterRsrc --keepParent "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app" "Teacher-Sidekick-Mac-$name.zip"
           done
       - name: Publish on the Releases page
