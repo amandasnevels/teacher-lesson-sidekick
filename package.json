@@ -16,6 +16,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@serwist/next": "^9.5.13",
     "@supabase/supabase-js": "^2.49.4",
     "idb-keyval": "^6.2.2",
     "lucide-react": "^0.544.0",
@@ -40,6 +41,7 @@
     "fake-indexeddb": "^6.2.2",
     "jsdom": "^27.0.0",
     "postcss": "^8.5.6",
+    "serwist": "^9.5.13",
     "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

@@ -14,6 +14,7 @@ import { DEFINITIONS } from "@/widgets/definitions";
 import { SHORTCUTS } from "./engines/Shortcuts";
 import { RosterManager } from "./RosterManager";
 import { SideBySideGuide } from "./SideBySide";
+import { InstallCard } from "./InstallApp";
 import { Button, Field, IconButton, Modal, Segmented, Toggle, cx, inputCls, useConfirm, usePrompt } from "./ui";
 
 export function SettingsPanel() {
@@ -56,6 +57,7 @@ function GeneralTab() {
   const [more, setMore] = useState(false);
   return (
     <div className="space-y-5">
+      <InstallCard compact />
       <section className="space-y-2 rounded-2xl border-2 border-line p-3" aria-labelledby="sbs-settings">
         <h3 id="sbs-settings" className="font-extrabold">🪟 Use Sidekick beside your lesson</h3>
         <SideBySideGuide compact />

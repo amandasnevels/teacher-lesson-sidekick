@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, LogOut } from "lucide-react";
 import { AccountBar } from "./Account";
+import { InstallCard } from "./InstallApp";
 import { useSidekick, persistedSnapshot } from "@/store/store";
 import { useSelectValue } from "@/store/hooks";
 import { WORKSPACE_PRESETS, type PresetKind } from "@/store/presets";
@@ -139,6 +140,7 @@ export function WorkspaceChooser({ mode }: { mode: "welcome" | "switch" }) {
         </ul>
 
         <footer className="mt-5 space-y-3 text-center text-sm text-ink-soft">
+          <InstallCard />
           {mode === "welcome" && (
             <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 font-semibold text-ink">
               <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={tour} onChange={(e) => setTour(e.target.checked)} />

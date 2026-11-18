@@ -76,6 +76,16 @@ Nothing personal is loaded until a preset is chosen, and nothing personal is sav
   "Delete it from this device" (both confirmed).
 - Automated tests start from a sample workspace with `/?start=sample` (no personal data).
 
+## Offline / installable app
+
+Sidekick is an installable web app (PWA). After one online visit, everything it needs — code,
+CHAMPS cards, logo, TEKS/ELPS data — is saved by a service worker (`src/app/sw.ts`, built with
+Serwist into `public/sw.js`), so it opens and works with no internet. Teachers install it with the
+**Download Sidekick** card (welcome screen, Main menu, Settings → General) or the browser's
+install icon (Chrome/Edge/Chromebook), or Share → Add to Home Screen (Safari/iPad).
+Only account sign-in needs a connection. New versions are picked up automatically on the next
+online launch. `e2e/offline.spec.ts` checks the offline behaviour.
+
 ## Teacher accounts (optional, Supabase)
 
 Accounts are off until two public settings are added in Vercel (Project → Settings → Environment
