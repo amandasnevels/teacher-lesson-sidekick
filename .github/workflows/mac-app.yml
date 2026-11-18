@@ -1,0 +1,55 @@
+# Builds "Teacher Sidekick for Mac" on a Mac and publishes it on the Releases page.
+# Start it from GitHub: Actions → "Mac app" → Run workflow.
+name: Mac app
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Public by design (the website ships the same values); accounts are protected by row-level security.
+      NEXT_PUBLIC_SUPABASE_URL: https://tronfmkjcbpxfllgqzju.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyb25mbWtqY2JweGZsbGdxemp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4MDk4NDYsImV4cCI6MjExMDM4NTg0Nn0.2YUVvIIL0xVNY8XhiZxagtlUPflDXBOM2qTLlSad_2I
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the offline copy
+        run: |
+          SIDEKICK_DESKTOP=1 npx next build
+          rm -rf desktop/app && cp -R out desktop/app && rm -f desktop/app/sw.js desktop/app/sw.js.map
+      - name: Package Apple Silicon + Intel apps
+        working-directory: desktop
+        run: |
+          npm ci
+          node package-mac.js
+          cd dist
+          for pair in "arm64:Apple-Silicon" "x64:Intel"; do
+            arch="${pair%%:*}"; name="${pair##*:}"
+            rm -f "Teacher-Sidekick-Mac-$name.zip"
+            ditto -c -k --sequesterRsrc --keepParent "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app" "Teacher-Sidekick-Mac-$name.zip"
+          done
+      - name: Publish on the Releases page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="mac-$(date +%Y.%m.%d-%H%M)"
+          cat > notes.md <<'NOTES'
+          Download **Teacher Sidekick** for Mac — works offline.
+
+          - **Apple Silicon** (M1, M2, M3, M4): Teacher-Sidekick-Mac-Apple-Silicon.zip
+          - **Intel Macs**: Teacher-Sidekick-Mac-Intel.zip
+
+          Install: unzip, drag **Teacher Sidekick** to Applications, then the first time **right-click → Open → Open**.
+          If it's blocked: System Settings → Privacy & Security → **Open Anyway**.
+          NOTES
+          gh release create "$TAG" desktop/dist/Teacher-Sidekick-Mac-*.zip --target "$GITHUB_SHA" --latest --title "Teacher Sidekick for Mac ($TAG)" --notes-file notes.md
