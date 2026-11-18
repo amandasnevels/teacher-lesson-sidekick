@@ -5,7 +5,7 @@
  * the two-tap steps (Safari / iPad: Share → Add to Home Screen).
  */
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, WifiOff } from "lucide-react";
+import { Apple, CheckCircle2, Download, WifiOff } from "lucide-react";
 import { Button, cx } from "./ui";
 
 interface InstallPromptEvent extends Event {
@@ -17,6 +17,13 @@ declare global {
     __sidekickInstall?: InstallPromptEvent | null;
   }
 }
+
+/** Signed + notarized Mac app, always the newest build (GitHub Releases). */
+const MAC_BASE = "https://github.com/amandasnevels/teacher-lesson-sidekick/releases/latest/download";
+export const MAC_DOWNLOADS = {
+  appleSilicon: `${MAC_BASE}/Teacher-Sidekick-Mac-Apple-Silicon.zip`,
+  intel: `${MAC_BASE}/Teacher-Sidekick-Mac-Intel.zip`,
+};
 
 const isStandalone = () =>
   typeof window !== "undefined" && (window.matchMedia?.("(display-mode: standalone)").matches || (navigator as Navigator & { standalone?: boolean }).standalone === true);
@@ -67,6 +74,8 @@ function InstallCardInner({ compact }: { compact?: boolean }) {
   const [help, setHelp] = useState(false);
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   const apple = /iPad|iPhone|Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|CriOS|Edg/.test(ua);
+  // Touch-screen "Macintosh" is an iPad; the Mac app is for real Macs.
+  const mac = /Macintosh/.test(ua) && !(typeof navigator !== "undefined" && navigator.maxTouchPoints > 1);
 
   return (
     <div className={cx("rounded-2xl border-2 border-line bg-card text-left", compact ? "p-3" : "mx-auto max-w-xl p-4")} data-testid="install-card">
@@ -117,9 +126,38 @@ function InstallCardInner({ compact }: { compact?: boolean }) {
           <li>Open Sidekick once while online. After that it works anywhere — even with no internet.</li>
         </ol>
       )}
+      <MacDownload prominent={mac} />
       <p className={cx("mt-2 flex items-center gap-1.5 text-xs font-bold", offlineReady ? "text-[#1d7f4f]" : "text-ink-soft")} data-testid="offline-status">
         {offlineReady ? <CheckCircle2 size={14} /> : <WifiOff size={14} />}
         {offlineReady ? "Saved on this computer — ready to use offline" : "Getting ready for offline use…"}
+      </p>
+    </div>
+  );
+}
+
+/** Download for Mac: a regular Mac app (signed by NevelLabs' Apple developer account), works offline. */
+function MacDownload({ prominent }: { prominent: boolean }) {
+  return (
+    <div className={cx("mt-3 rounded-xl border-2 border-line p-2.5", prominent ? "bg-soft" : "")} data-testid="mac-download">
+      <div className="flex flex-wrap items-center gap-2">
+        <Apple size={18} aria-hidden />
+        <p className="min-w-0 flex-1 text-sm font-extrabold">Download for Mac</p>
+        <a
+          href={MAC_DOWNLOADS.appleSilicon}
+          className={cx(
+            "inline-flex min-h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-bold transition hover:brightness-110",
+            prominent ? "bg-brand text-brand-ink shadow-sm" : "border-2 border-line bg-card text-ink",
+          )}
+          data-testid="mac-download-apple-silicon"
+        >
+          <Download size={14} /> Apple Silicon (M1–M4)
+        </a>
+        <a href={MAC_DOWNLOADS.intel} className="inline-flex min-h-9 items-center rounded-xl px-2 text-sm font-bold text-ink underline" data-testid="mac-download-intel">
+          Intel Mac
+        </a>
+      </div>
+      <p className="mt-1 text-xs text-ink-soft">
+        Unzip, drag <b>Teacher Sidekick</b> into Applications, and open it. Not sure which Mac? Apple menu → About This Mac: &ldquo;Chip: Apple M…&rdquo; = Apple Silicon.
       </p>
     </div>
   );

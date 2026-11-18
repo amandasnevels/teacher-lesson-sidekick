@@ -13,6 +13,9 @@ test("a new visit shows the branded chooser with all eight presets, at desktop a
     for (const name of ["Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace"])
       await expect(page.getByRole("button", { name: `Open ${name}`, exact: true })).toHaveText(`Open ${name}`);
     await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+    // Download for Mac always points at the newest signed release.
+    await expect(page.getByTestId("mac-download-apple-silicon")).toHaveAttribute("href", /releases\/latest\/download\/Teacher-Sidekick-Mac-Apple-Silicon\.zip$/);
+    await expect(page.getByTestId("mac-download-intel")).toHaveAttribute("href", /releases\/latest\/download\/Teacher-Sidekick-Mac-Intel\.zip$/);
     await expect(page.getByRole("button", { name: "Create account" })).toBeVisible();
     // Nothing personal and no class or workspace dropdowns before a choice.
     await expect(page.getByTestId("class-select")).toHaveCount(0);
