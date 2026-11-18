@@ -1,0 +1,16 @@
+{
+  "name": "teacher-sidekick",
+  "productName": "Teacher Sidekick",
+  "version": "1.0.0",
+  "description": "Teacher Sidekick by NevelLabs — classroom tools that work offline.",
+  "main": "main.js",
+  "private": true,
+  "author": "NevelLabs",
+  "scripts": {
+    "build:web": "cd .. && SIDEKICK_DESKTOP=1 next build && rm -rf desktop/app && cp -R out desktop/app && rm -f desktop/app/sw.js desktop/app/sw.js.map",
+    "package:mac": "node package-mac.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0"
+  }
+}

@@ -30,6 +30,9 @@ export interface AccountUser {
 }
 const toUser = (s: Session | null): AccountUser | null => (s?.user ? { id: s.user.id, email: s.user.email ?? "" } : null);
 
+/** Email links must open the website (the Mac app's own address can't be opened from an email). */
+const siteUrl = () => (/^https?:$/.test(window.location.protocol) ? window.location.origin : "https://sidekick.nevellabs.com");
+
 const friendly = (msg: string) =>
   /invalid login/i.test(msg)
     ? "That email and password don't match. Try again or reset your password."
@@ -55,7 +58,7 @@ export async function onAuthChange(cb: (u: AccountUser | null) => void): Promise
 
 export async function signUp(email: string, password: string): Promise<{ needsConfirm: boolean }> {
   if (password.length < 8) throw new Error("Please choose a longer password (at least 8 characters).");
-  const { data, error } = await (await sb()).auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: window.location.origin } });
+  const { data, error } = await (await sb()).auth.signUp({ email: email.trim(), password, options: { emailRedirectTo: siteUrl() } });
   if (error) throw new Error(friendly(error.message));
   return { needsConfirm: !data.session };
 }
@@ -71,7 +74,7 @@ export async function logOut() {
 }
 
 export async function sendPasswordReset(email: string) {
-  const { error } = await (await sb()).auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
+  const { error } = await (await sb()).auth.resetPasswordForEmail(email.trim(), { redirectTo: siteUrl() });
   if (error) throw new Error(friendly(error.message));
 }
 

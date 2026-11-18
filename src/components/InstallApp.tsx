@@ -57,6 +57,12 @@ export function useInstallApp() {
 }
 
 export function InstallCard({ compact }: { compact?: boolean }) {
+  // The Mac app (app:// address) is already installed and offline.
+  if (typeof window !== "undefined" && !/^https?:$/.test(window.location.protocol)) return null;
+  return <InstallCardInner compact={compact} />;
+}
+
+function InstallCardInner({ compact }: { compact?: boolean }) {
   const { canPrompt, installed, offlineReady, install } = useInstallApp();
   const [help, setHelp] = useState(false);
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";

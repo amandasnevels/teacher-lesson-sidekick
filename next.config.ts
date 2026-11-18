@@ -27,7 +27,10 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === "development",
 });
 
-const nextConfig: NextConfig = {
+/** `SIDEKICK_DESKTOP=1 next build` → a static copy in out/ for the Mac app (desktop/). */
+const desktop = process.env.SIDEKICK_DESKTOP === "1";
+
+const webConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   async headers() {
@@ -47,4 +50,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+const desktopConfig: NextConfig = {
+  reactStrictMode: true,
+  output: "export",
+  images: { unoptimized: true },
+};
+
+export default desktop ? desktopConfig : withSerwist(webConfig);

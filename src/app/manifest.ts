@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-static";
+
 /** Lets teachers install Sidekick as an app that opens in its own window and works offline. */
 export default function manifest(): MetadataRoute.Manifest {
   return {

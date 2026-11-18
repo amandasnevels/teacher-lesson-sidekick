@@ -116,3 +116,15 @@ store any student information on a server.
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for design decisions and
 [`docs/STATUS.md`](docs/STATUS.md) for the feature checklist and known limitations.
+
+## Mac app (desktop/)
+
+`desktop/` wraps the offline copy of Sidekick in an Electron app for macOS.
+
+    cd desktop && npm install
+    npm run build:web      # SIDEKICK_DESKTOP=1 next build → desktop/app (set the NEXT_PUBLIC_SUPABASE_* vars for accounts)
+    npm run package:mac    # → desktop/dist/Teacher-Sidekick-Mac-Apple-Silicon.zip and …-Intel.zip
+
+The app is not signed with an Apple Developer ID, so the first launch needs right-click → Open
+(or System Settings → Privacy & Security → Open Anyway). Signing/notarizing needs an Apple
+Developer account and a Mac.
