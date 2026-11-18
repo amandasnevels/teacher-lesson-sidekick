@@ -36,6 +36,9 @@ jobs:
           for pair in "arm64:Apple-Silicon" "x64:Intel"; do
             arch="${pair%%:*}"; name="${pair##*:}"
             rm -f "Teacher-Sidekick-Mac-$name.zip"
+            # Ad-hoc signature (free): Apple Silicon Macs won't run an unsigned app at all.
+            codesign --force --deep --sign - "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app"
+            codesign --verify --deep --strict "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app"
             ditto -c -k --sequesterRsrc --keepParent "Teacher Sidekick-darwin-$arch/Teacher Sidekick.app" "Teacher-Sidekick-Mac-$name.zip"
           done
       - name: Publish on the Releases page
