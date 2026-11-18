@@ -6,12 +6,12 @@
  */
 import { useEffect, useState } from "react";
 import { CloudDownload, CloudUpload, Eye, EyeOff, LogIn, LogOut, UserPlus } from "lucide-react";
-import { accountsEnabled, currentUser, loadSetup, logIn, logOut, onAuthChange, saveSetup, sendPasswordReset, signUp, type AccountUser } from "@/lib/account";
+import { accountsEnabled, currentUser, deleteAccount, loadSetup, logIn, logOut, onAuthChange, saveSetup, sendPasswordReset, signUp, type AccountUser } from "@/lib/account";
 import { buildSettingsPack } from "@/lib/exportPack";
 import { persistedSnapshot, useSidekick } from "@/store/store";
 import { startSession } from "@/store/persist";
 import { mergeSetup, sessionFromSetup } from "@/store/accountActions";
-import { Button, Modal, cx, inputCls } from "./ui";
+import { Button, Modal, cx, inputCls, useConfirm } from "./ui";
 
 export function useAccount() {
   const [user, setUser] = useState<AccountUser | null>(null);
@@ -41,6 +41,20 @@ export function AccountBar({ mode }: { mode: "welcome" | "switch" }) {
   const [dialog, setDialog] = useState<null | "login" | "create">(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmEl, ask] = useConfirm();
+
+  const removeAccount = async () => {
+    if (!(await ask("Permanently delete your Teacher Sidekick account and your saved setup? This can't be undone. Classes on this computer are not affected.", "Delete account"))) return;
+    setBusy(true);
+    try {
+      await deleteAccount();
+      setMsg("Your account and saved setup were deleted.");
+    } catch (e) {
+      setMsg((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const openSaved = async () => {
     setBusy(true);
@@ -73,6 +87,7 @@ export function AccountBar({ mode }: { mode: "welcome" | "switch" }) {
   if (!ready) return <div className="mb-2 h-9" />;
   return (
     <div className="mb-2 space-y-1" data-testid="account-bar">
+      {confirmEl}
       <div className="flex flex-wrap items-center justify-end gap-2">
         {user ? (
           <>
@@ -103,6 +118,9 @@ export function AccountBar({ mode }: { mode: "welcome" | "switch" }) {
             )}
             <Button variant="ghost" size="sm" onClick={() => void logOut()}>
               <LogOut size={16} /> Log out
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => void removeAccount()} disabled={busy}>
+              Delete account
             </Button>
           </>
         ) : (

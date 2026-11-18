@@ -95,3 +95,11 @@ export async function loadSetup(): Promise<{ pack: SettingsPack; updatedAt: stri
   if (error) throw new Error(error.message);
   return data ? { pack: data.pack as SettingsPack, updatedAt: data.updated_at as string } : null;
 }
+
+/** Permanently delete the signed-in teacher's account and saved setup (Apple requires this in-app). */
+export async function deleteAccount(): Promise<void> {
+  const c = await sb();
+  const { error } = await c.rpc("delete_my_account");
+  if (error) throw new Error(error.message);
+  await c.auth.signOut();
+}

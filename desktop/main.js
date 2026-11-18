@@ -37,13 +37,13 @@ function createWindow() {
   // Same-app windows (e.g. "Open in its own window") stay in the app; web links open in the browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith(ORIGIN)) return { action: "allow", overrideBrowserWindowOptions: { width: 420, height: 900 } };
-    if (/^https?:/.test(url)) shell.openExternal(url);
+    if (/^(https?|mailto):/.test(url)) shell.openExternal(url);
     return { action: "deny" };
   });
   win.webContents.on("will-navigate", (e, url) => {
     if (!url.startsWith(ORIGIN)) {
       e.preventDefault();
-      if (/^https?:/.test(url)) shell.openExternal(url);
+      if (/^(https?|mailto):/.test(url)) shell.openExternal(url);
     }
   });
 }
