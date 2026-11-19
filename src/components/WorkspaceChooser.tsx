@@ -142,7 +142,8 @@ export function WorkspaceChooser({ mode }: { mode: "welcome" | "switch" }) {
         <footer className="mt-5 space-y-3 text-center text-sm text-ink-soft">
           <InstallCard />
           <p className="text-xs">
-            <a href="/privacy" className="font-bold underline">Privacy</a> · <a href="/support" className="font-bold underline">Support</a>
+            <a href="/privacy" className="font-bold underline">Privacy</a> · <a href="/terms" className="font-bold underline">Terms</a> ·{" "}
+            <a href="/support" className="font-bold underline">Support</a>
           </p>
           {mode === "welcome" && (
             <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 font-semibold text-ink">

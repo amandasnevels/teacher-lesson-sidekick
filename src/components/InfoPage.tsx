@@ -17,7 +17,7 @@ export function InfoPage({ title, updated, children }: { title: string; updated?
         </header>
         {children}
         <footer>
-          <a href="/">Open Teacher Sidekick</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a>
+          <a href="/">Open Teacher Sidekick</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/support">Support</a>
         </footer>
       </article>
     </main>
