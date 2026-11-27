@@ -10,7 +10,7 @@
 
 ## Version 1.0
 **Promotional text (170 max)**
-Timers, CHAMPS expectations, voice levels, name picker, points and more — ready-made workspaces for every part of your teaching day. Works offline.
+Your classroom, calmer. Ready-made workspaces put timers, voice levels, expectations and name pickers one click away, right beside your slides. Works offline.
 
 **Description**
 Teacher Sidekick puts the classroom tools you reach for all day in one calm, colorful window that sits beside your slides.
@@ -22,7 +22,7 @@ Pick a ready-made teaching workspace and start teaching in seconds:
 • Custom — start with the basics and add only what you need
 
 25+ classroom widgets, including:
-• CHAMPS expectations with friendly visuals
+• Classroom expectations cards with friendly visuals
 • Voice Level meter (the microphone is only used when you turn it on)
 • Timers, station timers, clock and schedule with end-of-period reminders
 • Name picker with a quick correct/incorrect mastery check
@@ -38,7 +38,7 @@ Made for real classrooms:
 Made by a teacher, for teachers. Questions? sidekick.nevellabs.com/support
 
 **Keywords (100 max)**
-teacher,classroom,timer,CHAMPS,voice level,name picker,behavior,points,stations,centers,PBIS,noise
+teacher,classroom,timer,expectations,voice level,name picker,behavior,points,stations,centers,noise
 
 **Support URL:** https://sidekick.nevellabs.com/support
 **Marketing URL:** https://sidekick.nevellabs.com
