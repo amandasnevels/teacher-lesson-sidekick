@@ -31,7 +31,7 @@ const entitlements = path.join(__dirname, "entitlements.mac.plist");
       out: path.join(__dirname, "dist"),
       overwrite: true,
       prune: true,
-      ignore: [/^\/dist($|\/)/, /^\/node_modules($|\/)/, /^\/package-mac\.js$/, /^\/icon\.png$/, /^\/entitlements\.mac\.plist$/],
+      ignore: [/^\/dist($|\/)/, /^\/node_modules($|\/)/, /^\/dist-mas($|\/)/, /^\/package-ma[cs]\.js$/, /^\/icon\.png$/, /^\/entitlements.*\.plist$/],
       ...(identity
         ? {
             osxSign: { identity, optionsForFile: () => ({ hardenedRuntime: true, entitlements }) },

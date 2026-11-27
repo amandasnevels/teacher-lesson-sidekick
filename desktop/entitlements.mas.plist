@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Mac App Store: the app runs in Apple's sandbox -->
+  <key>com.apple.security.app-sandbox</key><true/>
+  <key>com.apple.security.application-groups</key>
+  <array><string>4MMHU7YQ72.com.nevellabs.sidekick</string></array>
+  <!-- Optional teacher account sign-in, and opening links -->
+  <key>com.apple.security.network.client</key><true/>
+  <!-- Voice Level widget (macOS still asks the teacher first) -->
+  <key>com.apple.security.device.audio-input</key><true/>
+  <!-- Saving and opening workspace packs / anchor chart images the teacher picks -->
+  <key>com.apple.security.files.user-selected.read-write</key><true/>
+</dict>
+</plist>
