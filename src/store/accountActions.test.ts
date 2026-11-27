@@ -20,7 +20,7 @@ describe("saved setups (accounts)", () => {
     const back = sessionFromSetup(JSON.parse(json), S().prefs);
     expect(back.classes).toEqual([]);
     const ws = back.workspaces[0];
-    expect(ws.name).toBe("Bryan ISD Workspace");
+    expect(ws.name).toBe("Essential Teacher Tools");
     expect(ws.kind).toBe("bryan");
     const orig = s.workspaces[0];
     const types = (st: typeof s, ids: string[]) => ids.map((id) => st.widgets[id].type);

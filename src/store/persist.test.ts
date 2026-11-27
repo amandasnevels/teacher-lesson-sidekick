@@ -127,7 +127,7 @@ describe("eight presets", () => {
       }
     }
   });
-  it("preset settings: Bryan ISD, Testing, Stations", () => {
+  it("preset settings: Essential Teacher Tools, Testing, Stations", () => {
     const bryan = freshSession("bryan");
     const b = bryan.workspaces[0].widgetIds.map((id) => bryan.widgets[id]);
     const of = (t: string) => b.find((w) => w.type === t)!;

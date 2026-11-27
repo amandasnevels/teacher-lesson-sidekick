@@ -10,7 +10,7 @@ test("a new visit shows the branded chooser with all eight presets, at desktop a
     await expect(page.getByRole("heading", { name: "Welcome to Teacher Sidekick!" })).toBeVisible();
     await expect(page.getByText("Your classroom tools, ready when you are. Choose a teaching workspace to get started.")).toBeVisible();
     await expect(page.getByAltText("Teacher Sidekick by NevelLabs")).toBeVisible();
-    for (const name of ["Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace"])
+    for (const name of ["Essential Teacher Tools", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace"])
       await expect(page.getByRole("button", { name: `Open ${name}`, exact: true })).toHaveText(`Open ${name}`);
     await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
     // Download for Mac always points at the newest signed release.
@@ -32,7 +32,7 @@ test("choose a preset → session kept across refreshes in this tab; a new tab s
   await expect(page.getByTestId("account-coming-soon").locator("input")).toHaveCount(0);
   await page.getByRole("button", { name: /Got it/ }).click();
   await page.getByRole("checkbox", { name: /quick 4-step tour/ }).check();
-  await page.getByRole("button", { name: "Open Bryan ISD Workspace", exact: true }).click();
+  await page.getByRole("button", { name: "Open Essential Teacher Tools", exact: true }).click();
   // Optional walkthrough.
   await expect(page.getByTestId("walkthrough")).toContainText("Active Class");
   await page.getByRole("button", { name: "Skip" }).click();
@@ -61,11 +61,11 @@ test("choose a preset → session kept across refreshes in this tab; a new tab s
   await expect(page.locator('[data-testid="widget-status"]')).toContainText("Testing");
   // Choosing it again opens the same workspace instead of a copy.
   await page.getByRole("button", { name: /open the workspace chooser/ }).click();
-  await page.getByRole("button", { name: "Open Bryan ISD Workspace", exact: true }).click();
+  await page.getByRole("button", { name: "Open Essential Teacher Tools", exact: true }).click();
   // All eight presets are listed; picking one that isn't open yet creates it once.
   const options = page.getByTestId("workspace-select").locator("option");
   await expect(options).toHaveText([
-    "Bryan ISD Workspace", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace",
+    "Essential Teacher Tools", "Whole Group", "Stations & Centers", "Testing", "Small Group", "Classroom Management", "Daily Organization", "Transition", "Custom Workspace",
     "✏️ Customize for This Class", "＋ New workspace…", "Manage workspaces…",
   ]);
   await page.getByTestId("workspace-select").selectOption({ label: "Small Group" });

@@ -13,7 +13,7 @@ test("after one visit, Sidekick opens and works with no internet", async ({ page
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Welcome to Teacher Sidekick!" })).toBeVisible();
-  await page.getByRole("button", { name: "Open Bryan ISD Workspace", exact: true }).click();
+  await page.getByRole("button", { name: "Open Essential Teacher Tools", exact: true }).click();
   await expect(page.getByTestId("widget-grid")).toBeVisible();
   // Pictures (CHAMPS cards) load from the device.
   const champs = page.locator('[data-testid="widget-champs"]');

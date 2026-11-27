@@ -26,7 +26,7 @@ WHAT MAKES IT DIFFERENT
 • Objectives ready to post: search TEKS for "I Can" statements and ELPS for "I Will" statements by grade and subject.
 
 READY-MADE WORKSPACES
-Whole Group, Stations & Centers, Small Group, Testing, Transition, Classroom Management, Daily Organization, or build your own.
+Essential Teacher Tools, Whole Group, Stations & Centers, Small Group, Testing, Transition, Classroom Management, Daily Organization, or build your own.
 
 25+ CLASSROOM TOOLS
 Classroom expectations cards, timers and station timers, clock, schedule, spinner, dice, turn queue, class status, visual cues, soundboard, checklists, sticky notes, anchor charts, quick fact games and more.

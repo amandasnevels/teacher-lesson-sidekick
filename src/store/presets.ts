@@ -44,9 +44,9 @@ const at = (x: number, row: number, w: PresetWidget): PresetWidget => ({ ...w, a
 export const WORKSPACE_PRESETS: WorkspacePreset[] = [
   {
     kind: "bryan",
-    name: "Bryan ISD Workspace",
-    emoji: "🏫",
-    description: "The district daily set: time, objectives, expectations and check-outs.",
+    name: "Essential Teacher Tools",
+    emoji: "🧰",
+    description: "The everyday essentials: time, objectives, expectations, check-outs and rewards.",
     widgets: [
       at(0, 0, clockWithDate),
       at(0, 1, { type: "timer", config: { durationSec: 300 }, w: 1 }),
