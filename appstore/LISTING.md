@@ -2,7 +2,7 @@
 
 ## App Information
 - **Name:** Teacher Sidekick by NevelLabs
-- **Subtitle (30 max):** Classroom tools, ready to teach
+- **Subtitle (30 max):** Run your class from one screen
 - **Primary category:** Education
 - **Secondary category:** Productivity
 - **Content rights:** Does not contain, show, or access third-party content
@@ -10,30 +10,31 @@
 
 ## Version 1.0
 **Promotional text (170 max)**
-Your classroom, calmer. Ready-made workspaces put timers, voice levels, expectations and name pickers one click away, right beside your slides. Works offline.
+Set it up once for each class. Hall passes, reminders, voice-level rewards, participation, groups and TEKS objectives are ready the moment you switch periods.
 
 **Description**
-Teacher Sidekick puts the classroom tools you reach for all day in one calm, colorful window that sits beside your slides.
+Teacher Sidekick puts everything you juggle while teaching on one calm, colorful screen that sits right beside your slides.
 
-Pick a ready-made teaching workspace and start teaching in seconds:
-• Whole Group — objectives, timer, name picker, participation and quick cues
-• Stations & Centers — rotation timer, group maker, spinner and schedule
-• Small Group, Testing, Transition, Classroom Management and Daily Organization
-• Custom — start with the basics and add only what you need
+WHAT MAKES IT DIFFERENT
+• Saved workspaces for every class and every part of your day: set up Period 2 or small group once, and it's ready each time you switch.
+• Voice Level meter with automatic rewards: quiet work earns class points on its own, and the too-loud alert is up to you.
+• Hall pass tracking: one-tap check-out and check-in, with times logged for each student.
+• Auto reminders: schedule end-of-period sounds and spoken announcements, with your class switching automatically.
+• Participation and behavior tracking: check off who has shared, award points, and track rewards, kept separately for each class.
+• Quick name picker with a correct/incorrect check, so you see mastery without leaving the dashboard.
+• Group maker: random pairs or groups in one click.
+• Objectives ready to post: search TEKS for "I Can" statements and ELPS for "I Will" statements by grade and subject.
 
-25+ classroom widgets, including:
-• Classroom expectations cards with friendly visuals
-• Voice Level meter (the microphone is only used when you turn it on)
-• Timers, station timers, clock and schedule with end-of-period reminders
-• Name picker with a quick correct/incorrect mastery check
-• Points, reward tracker (jar, creature, secret picture), turn queue and hall pass
-• I Can statements, checklists, sticky notes, anchor charts, dice and more
+READY-MADE WORKSPACES
+Whole Group, Stations & Centers, Small Group, Testing, Transition, Classroom Management, Daily Organization, or build your own.
 
-Made for real classrooms:
-• Works offline — no internet needed once installed
-• Classes and student names stay on your Mac. They are never uploaded.
-• Optional free account saves your workspaces and layouts (never student data)
-• Drag, resize and arrange widgets; set a different setup for each class
+25+ CLASSROOM TOOLS
+Classroom expectations cards, timers and station timers, clock, schedule, spinner, dice, turn queue, class status, visual cues, soundboard, checklists, sticky notes, anchor charts, quick fact games and more.
+
+PRIVATE BY DESIGN
+• Works offline: no internet needed once installed.
+• Class lists and student names stay on your Mac. They are never uploaded.
+• Optional free account saves your workspaces and layouts, never student data.
 
 Made by a teacher, for teachers. Questions? sidekick.nevellabs.com/support
 
