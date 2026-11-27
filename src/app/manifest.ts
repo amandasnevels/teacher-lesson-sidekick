@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Teacher Sidekick by NevelLabs",
     short_name: "Sidekick",
-    description: "Classroom tools that work offline: timers, CHAMPS, voice level, name picker and more.",
+    description: "Classroom tools that work offline: timers, expectations, voice level, name picker and more.",
     start_url: "/",
     scope: "/",
     display: "standalone",

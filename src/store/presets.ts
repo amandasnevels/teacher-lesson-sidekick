@@ -175,7 +175,7 @@ export const WORKSPACE_PRESETS: WorkspacePreset[] = [
     kind: "custom",
     name: "Custom Workspace",
     emoji: "✨",
-    description: "Start with just CHAMPS and Voice Level, then add your own tools.",
+    description: "Start with just Expectations and Voice Level, then add your own tools.",
     widgets: [at(0, 0, champs("wholeGroup")), at(1, 0, { type: "voice", w: 2 })],
   },
 ];

@@ -54,7 +54,7 @@ describe("CHAMPS widget", () => {
   it("has a drop-down with all eight presets; choosing one switches the six picture tiles", () => {
     const id = add("champs");
     render(<Champs.Body id={id} view="normal" size="M" />);
-    const select = screen.getByRole("combobox", { name: "CHAMPS activity" });
+    const select = screen.getByRole("combobox", { name: "Expectations activity" });
     expect(within(select).getAllByRole("option").map((o) => o.textContent)).toEqual(Object.keys(TABLE));
     expect(select).toHaveValue("wholeGroup");
     fireEvent.change(select, { target: { value: "stations" } });

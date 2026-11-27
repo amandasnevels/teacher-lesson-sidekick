@@ -73,12 +73,12 @@ function Body({ id, view }: WidgetProps) {
   return (
     <div className="space-y-2">
       <label className="block">
-        <span className="sr-only">CHAMPS activity</span>
+        <span className="sr-only">Expectations activity</span>
         <select
           className={cx(inputCls, "min-h-10 font-black")}
           value={active}
           onChange={(e) => set({ active: e.target.value as ChampsPresetId, presets: config?.presets ?? DEFAULT_CHAMPS })}
-          aria-label="CHAMPS activity"
+          aria-label="Expectations activity"
           data-testid="champs-select"
         >
           {CHAMPS_PRESETS.map((p) => (

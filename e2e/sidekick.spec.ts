@@ -289,7 +289,7 @@ test("resize grips work from the keyboard and are hidden on locked widgets", asy
   await page.keyboard.press("ArrowLeft");
   await page.keyboard.press("ArrowLeft");
   await expect(card).toHaveAttribute("data-span", "1");
-  await page.getByRole("button", { name: "More options for CHAMPS" }).click();
+  await page.getByRole("button", { name: "More options for Expectations" }).click();
   await page.getByRole("menuitem", { name: "Lock" }).click();
   await expect(card.getByTestId("resize-right")).toHaveCount(0);
 });
@@ -480,7 +480,7 @@ test("packed grid: short widgets stack beside tall ones; S/M/L size buttons", as
     await page.getByRole("button", { name: "Add widget", exact: true }).click();
     await page.getByRole("button", { name: `Add new ${n}`, exact: true }).click();
   }
-  for (const t of ["CHAMPS", "Clock", "Dice", "Tally Counter"]) {
+  for (const t of ["Expectations", "Clock", "Dice", "Tally Counter"]) {
     await page.getByRole("button", { name: `More options for ${t}` }).click();
     await page.getByRole("menuitemradio", { name: "Small size" }).click();
     await page.keyboard.press("Escape");
@@ -509,7 +509,7 @@ test("drag a widget under or above another in any column; contents grow with the
     await page.getByRole("button", { name: "Add widget", exact: true }).click();
     await page.getByRole("button", { name: `Add new ${n}`, exact: true }).click();
   }
-  for (const t of ["CHAMPS", "Sticky Note", "Clock", "Dice"]) {
+  for (const t of ["Expectations", "Sticky Note", "Clock", "Dice"]) {
     await page.getByRole("button", { name: `More options for ${t}` }).click();
     await page.getByRole("menuitemradio", { name: "Small size" }).click();
     await page.keyboard.press("Escape");

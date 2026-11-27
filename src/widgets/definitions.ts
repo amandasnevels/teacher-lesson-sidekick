@@ -381,9 +381,9 @@ export const DEFINITIONS: Record<WidgetType, WidgetDefinition> = {
   },
   champs: {
     type: "champs",
-    name: "CHAMPS",
+    name: "Expectations",
     emoji: "📣",
-    description: "Classroom expectations: Conversation, Help, Activity, Movement, Participation, Success.",
+    description: "Classroom expectations for each activity: talking, help, movement, participation and what success looks like.",
     category: "Management",
     keywords: ["champs", "expectations", "behavior", "conversation", "help", "movement", "participation", "routines", "voice level"],
     defaultColor: "orange",
@@ -444,7 +444,7 @@ export interface WidgetPack {
 }
 
 export const PACKS: WidgetPack[] = [
-  { id: "management", name: "Classroom Management", emoji: "🧭", description: "Voice levels, sounds, status, visual cues and CHAMPS.", types: ["voice", "soundboard", "status", "cues", "champs"] },
+  { id: "management", name: "Classroom Management", emoji: "🧭", description: "Voice levels, sounds, status, visual cues and expectations.", types: ["voice", "soundboard", "status", "cues", "champs"] },
   { id: "activities", name: "Interactive Activities", emoji: "🎲", description: "Dice, spinner, choices, coin, groups and a turn queue.", types: ["dice", "spinner", "choice", "coin", "groups", "queue"] },
   { id: "learning", name: "Learning Games", emoji: "🧠", description: "Quick Fact Game, Fast Facts math flash cards and anchor charts.", types: ["quiz", "fastfacts", "anchor"] },
   { id: "rewards", name: "Rewards", emoji: "🏆", description: "Reward tracker and tally counter.", types: ["reward", "tally"] },

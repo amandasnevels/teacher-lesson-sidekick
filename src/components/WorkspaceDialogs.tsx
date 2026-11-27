@@ -174,7 +174,7 @@ export function NewWorkspaceDialog({ open, onClose }: { open: boolean; onClose: 
           </label>
         )}
 
-        {mode === "blank" && <p className="text-sm text-ink-soft">Starts with just the required CHAMPS and Voice Level widgets. Add the rest from the Widget Library.</p>}
+        {mode === "blank" && <p className="text-sm text-ink-soft">Starts with just the required Expectations and Voice Level widgets. Add the rest from the Widget Library.</p>}
 
         <label className="block space-y-1">
           <span className="text-sm font-bold">Workspace name</span>

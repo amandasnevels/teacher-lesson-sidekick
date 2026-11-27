@@ -79,7 +79,7 @@ Nothing personal is loaded until a preset is chosen, and nothing personal is sav
 ## Offline / installable app
 
 Sidekick is an installable web app (PWA). After one online visit, everything it needs — code,
-CHAMPS cards, logo, TEKS/ELPS data — is saved by a service worker (`src/app/sw.ts`, built with
+expectations cards, logo, TEKS/ELPS data — is saved by a service worker (`src/app/sw.ts`, built with
 Serwist into `public/sw.js`), so it opens and works with no internet. Teachers install it with the
 **Download Sidekick** card (welcome screen, Main menu, Settings → General) or the browser's
 install icon (Chrome/Edge/Chromebook), or Share → Add to Home Screen (Safari/iPad).

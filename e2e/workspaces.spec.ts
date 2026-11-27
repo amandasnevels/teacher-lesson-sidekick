@@ -26,7 +26,7 @@ test("Active Class + Teaching Workspace: prompt, templates, required CHAMPS, pau
   for (const t of ["champs", "voice", "clock", "schedule", "reminders", "hallpass", "checklist"])
     await expect(page.locator(`[data-testid="widget-${t}"]`)).toHaveCount(1);
   // Required CHAMPS can't be removed.
-  await page.getByRole("button", { name: "More options for CHAMPS" }).click();
+  await page.getByRole("button", { name: "More options for Expectations" }).click();
   await expect(page.getByRole("menuitem", { name: /Remove/ })).toBeDisabled();
   await page.keyboard.press("Escape");
 
