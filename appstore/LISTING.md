@@ -21,7 +21,7 @@ Pick a ready-made teaching workspace and start teaching in seconds:
 • Small Group, Testing, Transition, Classroom Management and Daily Organization
 • Custom — start with the basics and add only what you need
 
-More than 30 widgets, including:
+25+ classroom widgets, including:
 • CHAMPS expectations with friendly visuals
 • Voice Level meter (the microphone is only used when you turn it on)
 • Timers, station timers, clock and schedule with end-of-period reminders
